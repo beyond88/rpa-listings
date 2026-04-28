@@ -1,0 +1,14 @@
+{
+  "name": "rpa/rpa-listings",
+  "description": "RPA Listings plugin.",
+  "type": "wordpress-plugin",
+  "license": "proprietary",
+  "require": {
+    "php": ">=7.4"
+  },
+  "autoload": {
+    "psr-4": {
+      "RPAListings\\": "includes/"
+    }
+  }
+}
