@@ -20,6 +20,10 @@ final class ProjectMetabox
 	private const META_AMENITIES = 'rpa_project_amenities';
 	private const META_AMENITIES_TYPED = 'rpa_project_amenities_typed';
 	private const META_GALLERY = 'rpa_project_gallery_ids';
+	private const META_SOLD_SUMMARY = 'rpa_project_sold_summary';
+	private const META_TEASER_DESC = 'rpa_project_teaser_desc';
+	private const META_FULL_DESC = 'rpa_project_full_desc';
+	private const META_DOCUMENTS = 'rpa_project_documents';
 
 	public function register(): void
 	{
@@ -33,6 +37,33 @@ final class ProjectMetabox
 			'rpa-project-basic-info',
 			esc_html__('Basic Info', 'rpa-listings'),
 			[$this, 'render'],
+			'project',
+			'normal',
+			'high'
+		);
+
+		add_meta_box(
+			'rpa-project-descriptions',
+			esc_html__('Descriptions', 'rpa-listings'),
+			[$this, 'render_descriptions'],
+			'project',
+			'normal',
+			'high'
+		);
+
+		add_meta_box(
+			'rpa-project-sold-info',
+			esc_html__('Sold Listing Info', 'rpa-listings'),
+			[$this, 'render_sold_info'],
+			'project',
+			'normal',
+			'high'
+		);
+
+		add_meta_box(
+			'rpa-project-documents',
+			esc_html__('Documents', 'rpa-listings'),
+			[$this, 'render_documents'],
 			'project',
 			'normal',
 			'high'
@@ -254,6 +285,96 @@ final class ProjectMetabox
 		echo '</div>';
 	}
 
+	public function render_descriptions(\WP_Post $post, array $box = []): void
+	{
+		$teaser_desc = get_post_meta($post->ID, self::META_TEASER_DESC, true);
+		$full_desc = get_post_meta($post->ID, self::META_FULL_DESC, true);
+
+		echo '<div class="rpa-project-meta">';
+
+		echo '<div class="rpa-row">';
+		echo '<label class="rpa-label" for="rpa_project_teaser_desc">' . esc_html__('Teaser Description', 'rpa-listings') . '</label>';
+		wp_editor(
+			(string) $teaser_desc,
+			'rpa_project_teaser_desc',
+			[
+				'textarea_name' => 'rpa_project_teaser_desc',
+				'textarea_rows' => 6,
+				'media_buttons' => true,
+				'tinymce'       => true,
+				'quicktags'     => true,
+			]
+		);
+		echo '</div>';
+
+		echo '<hr />';
+
+		echo '<div class="rpa-row">';
+		echo '<label class="rpa-label" for="rpa_project_full_desc">' . esc_html__('Full Description', 'rpa-listings') . '</label>';
+		wp_editor(
+			(string) $full_desc,
+			'rpa_project_full_desc',
+			[
+				'textarea_name' => 'rpa_project_full_desc',
+				'textarea_rows' => 12,
+				'media_buttons' => true,
+				'tinymce'       => true,
+				'quicktags'     => true,
+			]
+		);
+		echo '</div>';
+
+		echo '</div>';
+	}
+
+	public function render_sold_info(\WP_Post $post, array $box = []): void
+	{
+		$sold_summary = get_post_meta($post->ID, self::META_SOLD_SUMMARY, true);
+
+		echo '<div class="rpa-project-meta">';
+		echo '<div class="rpa-row">';
+		echo '<label class="rpa-label" for="rpa_project_sold_summary">' . esc_html__('Sold summary', 'rpa-listings') . '</label>';
+
+		wp_editor(
+			(string) $sold_summary,
+			'rpa_project_sold_summary',
+			[
+				'textarea_name' => 'rpa_project_sold_summary',
+				'textarea_rows' => 10,
+				'media_buttons' => true,
+				'tinymce'       => true,
+				'quicktags'     => true,
+			]
+		);
+
+		echo '</div>';
+		echo '</div>';
+	}
+
+	public function render_documents(\WP_Post $post, array $box = []): void
+	{
+		$documents_json = get_post_meta($post->ID, self::META_DOCUMENTS, true);
+		if (!$documents_json || !is_string($documents_json)) {
+			$documents_json = '[]';
+		}
+
+		echo '<div class="rpa-project-meta">';
+		echo '<input type="hidden" id="rpa_project_documents_data" name="rpa_project_documents" value="' . esc_attr($documents_json) . '" />';
+
+		echo '<div id="rpa-document-manager" class="rpa-doc-manager">';
+		echo '  <div class="rpa-doc-header">';
+		echo '    <div class="rpa-doc-breadcrumbs" id="rpa-doc-breadcrumbs"></div>';
+		echo '    <div class="rpa-doc-actions">';
+		echo '      <button type="button" class="button" id="rpa-doc-new-folder">' . esc_html__('New Folder', 'rpa-listings') . '</button>';
+		echo '      <button type="button" class="button button-primary" id="rpa-doc-add-files">' . esc_html__('Add Files', 'rpa-listings') . '</button>';
+		echo '    </div>';
+		echo '  </div>';
+		echo '  <div class="rpa-doc-grid" id="rpa-doc-grid"></div>';
+		echo '</div>';
+
+		echo '</div>';
+	}
+
 	public function save(int $post_id, \WP_Post $post, bool $update = false): void
 	{
 		if (!isset($_POST[self::NONCE_NAME]) || !wp_verify_nonce((string) $_POST[self::NONCE_NAME], self::NONCE_ACTION)) {
@@ -328,6 +449,28 @@ final class ProjectMetabox
 		$gallery_ids = array_filter(array_map('intval', preg_split('/\s*,\s*/', $gallery_ids_raw)));
 		$gallery_ids = array_values(array_unique(array_filter($gallery_ids, static fn($v) => $v > 0)));
 		update_post_meta($post_id, self::META_GALLERY, $gallery_ids);
+
+		if (isset($_POST['rpa_project_sold_summary'])) {
+			$sold_summary = wp_kses_post(wp_unslash($_POST['rpa_project_sold_summary']));
+			update_post_meta($post_id, self::META_SOLD_SUMMARY, $sold_summary);
+		}
+
+		if (isset($_POST['rpa_project_teaser_desc'])) {
+			$teaser_desc = wp_kses_post(wp_unslash($_POST['rpa_project_teaser_desc']));
+			update_post_meta($post_id, self::META_TEASER_DESC, $teaser_desc);
+		}
+
+		if (isset($_POST['rpa_project_full_desc'])) {
+			$full_desc = wp_kses_post(wp_unslash($_POST['rpa_project_full_desc']));
+			update_post_meta($post_id, self::META_FULL_DESC, $full_desc);
+		}
+
+		if (isset($_POST['rpa_project_documents'])) {
+			$documents_json = wp_unslash($_POST['rpa_project_documents']);
+			if (is_string($documents_json) && json_decode($documents_json) !== null) {
+				update_post_meta($post_id, self::META_DOCUMENTS, $documents_json);
+			}
+		}
 	}
 
 	private function property_type_options(): array
