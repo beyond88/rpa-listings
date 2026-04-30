@@ -27,117 +27,199 @@
 }
 .rpa-modal-content {
     background-color: #fff;
-    margin: 5% auto;
-    padding: 30px;
-    border-radius: 8px;
+    margin: 2% auto;
+    padding: 40px 50px;
+    border-radius: 0;
     width: 90%;
-    max-width: 800px;
+    max-width: 700px;
     position: relative;
     box-shadow: 0 4px 20px rgba(0,0,0,0.15);
 }
+.rpa-modal-content.rpa-ca-document {
+    font-family: 'Times New Roman', Times, Georgia, serif;
+    color: #000;
+    line-height: 1.45;
+}
 .rpa-modal-close {
     position: absolute;
-    right: 20px;
-    top: 15px;
-    font-size: 28px;
+    right: 15px;
+    top: 10px;
+    font-size: 24px;
     font-weight: bold;
-    color: #aaa;
+    color: #999;
     cursor: pointer;
+    z-index: 10;
 }
 .rpa-modal-close:hover {
     color: #333;
 }
 
-/* CA Form Styles */
-.rpa-ca-title {
-    font-size: 24px;
+/* CA Document Layout */
+.rpa-ca-logo-header {
+    text-align: right;
+    margin-bottom: 15px;
+}
+.rpa-ca-logo {
+    max-height: 65px;
+    width: auto;
+}
+.rpa-ca-doc-title {
+    text-align: center;
+    font-size: 16px;
     font-weight: bold;
-    color: #1a2f55;
-    margin-bottom: 20px;
+    color: #000;
+    margin: 0 0 20px 0;
+    font-family: inherit;
+    line-height: 1.3;
 }
-.rpa-ca-text {
-    font-size: 15px;
-    line-height: 1.6;
-    margin-bottom: 15px;
+.rpa-ca-doc-body {
+    margin-bottom: 25px;
 }
-.rpa-ca-scrollable-text {
-    height: 200px;
-    overflow-y: auto;
-    border: 1px solid #ddd;
-    padding: 15px;
-    margin-bottom: 20px;
-    font-size: 13px;
-    line-height: 1.5;
-    background: #f9f9f9;
+.rpa-ca-doc-body p {
+    font-size: 11.5px;
+    line-height: 1.45;
+    margin: 0 0 12px 0;
+    text-align: left;
+    color: #000;
 }
-.rpa-ca-form .rpa-form-group {
-    margin-bottom: 15px;
-}
-.rpa-ca-form .rpa-form-row {
-    display: flex;
-    gap: 15px;
-}
-.rpa-ca-form .rpa-form-row .rpa-form-group {
-    flex: 1;
-}
-.rpa-ca-form label {
-    display: block;
-    font-weight: 600;
-    margin-bottom: 5px;
-    color: #333;
-}
-.rpa-ca-form input[type="text"],
-.rpa-ca-form input[type="email"],
-.rpa-ca-form input[type="tel"] {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    font-size: 15px;
-}
-.rpa-req {
-    color: #e53935;
+.rpa-ca-doc-body p u {
+    text-decoration: underline;
 }
 
-/* Signature Pad */
-.rpa-signature-wrapper {
+/* CA Document Fields */
+.rpa-ca-doc-fields {
+    margin-top: 10px;
+}
+.rpa-ca-agree-text {
+    font-size: 14px;
+    margin: 0 0 20px 0;
+    color: #1a1a2e; /* Darker navy like screenshot */
+    line-height: 1.4;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 500;
+}
+.rpa-ca-agree-text input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    margin: 0;
+    cursor: pointer;
+}
+.rpa-ca-field-row {
+    display: flex;
+    align-items: flex-end;
+    margin-bottom: 14px;
+    gap: 0;
+}
+.rpa-ca-field-row label {
+    font-size: 12px;
+    font-weight: normal;
+    color: #000;
+    white-space: nowrap;
+    margin: 0;
+    padding: 0;
+    display: inline;
+    line-height: 1;
+    font-family: inherit;
+}
+.rpa-ca-field-input {
+    flex-grow: 1;
+    border: none !important;
+    border-bottom: 1px solid #000 !important;
+    border-radius: 0 !important;
+    padding: 0 4px 2px 4px !important;
+    margin-left: 2px;
+    background: transparent !important;
+    outline: none !important;
+    box-shadow: none !important;
+    font-family: inherit;
+    font-size: 12px;
+    line-height: 1;
+    height: auto;
+    max-width: 350px;
+}
+.rpa-ca-field-input:focus {
+    border-bottom-color: #333 !important;
+}
+.rpa-ca-date-input {
+    max-width: 180px;
+}
+
+/* Signature Row */
+.rpa-ca-signature-row {
+    align-items: flex-end;
+}
+.rpa-ca-sig-wrap {
+    flex-grow: 1;
+    max-width: 350px;
+    margin-left: 2px;
+    border-bottom: 1px solid #000;
     position: relative;
-    border: 1px solid #ccc;
-    border-radius: 4px;
     background: #fff;
 }
 #rpaSignatureCanvas {
     width: 100%;
-    height: 150px;
+    height: 50px;
     cursor: crosshair;
+    display: block;
 }
 .rpa-clear-sig {
     position: absolute;
-    bottom: 5px;
-    right: 5px;
-    background: #eee;
+    top: 2px;
+    right: 2px;
+    background: rgba(238,238,238,0.8);
     border: 1px solid #ccc;
-    padding: 4px 8px;
-    font-size: 12px;
+    padding: 2px 6px;
+    font-size: 10px;
     cursor: pointer;
-    border-radius: 3px;
+    border-radius: 2px;
+    line-height: 1;
 }
 .rpa-clear-sig:hover {
     background: #ddd;
 }
 
-.rpa-form-actions {
-    margin-top: 20px;
+/* Captcha */
+.rpa-ca-captcha-row {
+    margin-top: 15px;
+    margin-bottom: 10px;
+}
+.rpa-ca-captcha-row label {
+    font-size: 12px;
+    font-weight: normal;
+    color: #000;
+    font-family: inherit;
+    display: block;
+    margin-bottom: 5px;
+}
+.rpa-ca-captcha-input {
+    max-width: 180px !important;
+    border: 1px solid #999 !important;
+    border-radius: 3px !important;
+    padding: 4px 8px !important;
+    font-size: 12px;
+}
+.rpa-req {
+    color: #d32f2f;
+}
+
+/* Submit */
+.rpa-ca-submit-row {
+    margin-top: 15px;
     text-align: right;
 }
 .rpa-submit-btn {
     background-color: #c09e6c;
     color: #fff;
-    padding: 12px 24px;
+    padding: 12px 35px;
     border: none;
-    border-radius: 4px;
-    font-size: 16px;
+    border-radius: 6px;
+    font-size: 15px;
+    font-weight: 500;
     cursor: pointer;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    letter-spacing: 0.5px;
 }
 .rpa-submit-btn:hover {
     background-color: #a88a5e;
@@ -146,6 +228,7 @@
     margin-top: 10px;
     font-weight: 600;
 }
+
 
 /* Frontend Document Manager */
 .rpa-frontend-doc-manager {
@@ -574,19 +657,24 @@
     display: inline-block;
 }
 
-/* Responsive Styles for Modal Form */
+/* Responsive Styles */
 @media (max-width: 768px) {
     .rpa-modal-content {
         width: 95%;
-        margin: 10% auto;
-        padding: 20px;
+        margin: 5% auto;
+        padding: 20px 15px;
     }
-    .rpa-ca-form .rpa-form-row {
-        flex-direction: column;
-        gap: 0;
+    .rpa-ca-doc-title {
+        font-size: 14px;
     }
-    .rpa-ca-title {
-        font-size: 20px;
+    .rpa-ca-doc-body p {
+        font-size: 11px;
+    }
+    .rpa-ca-field-input {
+        max-width: 220px;
+    }
+    .rpa-ca-sig-wrap {
+        max-width: 220px;
     }
     .rpa-doc-toolbar {
         flex-direction: column;

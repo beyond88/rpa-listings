@@ -73,14 +73,14 @@ jQuery(document).ready(function($) {
 
         // 1. Validate signature
         if (signaturePad && signaturePad.isEmpty()) {
-            alert('Please provide a signature first.');
+            $('.rpa-form-msg').css('color', 'red').text('Please provide a signature first.');
             return;
         }
 
         // 2. Validate math captcha locally
         var userAnswer = parseInt($('#rpa-captcha-answer').val(), 10);
         if (isNaN(userAnswer) || userAnswer !== expectedCaptchaResult) {
-            alert('Incorrect Math Captcha answer. Please try again.');
+            $('.rpa-form-msg').css('color', 'red').text('Incorrect Math Captcha answer. Please try again.');
             $('#rpa-captcha-answer').val('').focus();
             
             // Optionally regenerate the captcha only if the new HTML is present
@@ -125,7 +125,7 @@ jQuery(document).ready(function($) {
                     }
 
                     $fieldsContainer.hide();
-                    $('.rpa-ca-scrollable-text, .rpa-ca-text, .rpa-ca-title').hide();
+                    $('.rpa-ca-doc-body, .rpa-ca-agree-text, .rpa-ca-doc-title, .rpa-ca-logo-header, .rpa-ca-scrollable-text, .rpa-ca-text, .rpa-ca-title').hide();
 
                     var successHtml = '<div style="text-align: center; padding: 40px 30px;">' +
                         '<div style="width: 70px; height: 70px; border-radius: 50%; background: linear-gradient(135deg, #c09e6c, #d4b88a); margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(192, 158, 108, 0.4);">' +
@@ -146,7 +146,7 @@ jQuery(document).ready(function($) {
 
                 } else {
                     var msg = res.data.message || 'An error occurred.';
-                    alert(msg);
+                    // Removed alert(msg);
                     $msg.css('color', 'red').text(msg);
                     $submitBtn.prop('disabled', false).text('Submit');
                 }
@@ -508,12 +508,12 @@ jQuery(document).ready(function($) {
                             renderDocs();
                         }, 2000);
                     } else {
-                        alert(res.data.message || 'Error generating ZIP.');
+                        // Removed alert
                         $btn.prop('disabled', false).text(originalText);
                     }
                 },
                 error: function() {
-                    alert('Server error.');
+                    // Removed alert
                     $btn.prop('disabled', false).text(originalText);
                 }
             });

@@ -72,12 +72,13 @@ class DealHandler
         $email = get_post_meta($entry_id, 'rpa_email', true);
         $signature_data = get_post_meta($entry_id, 'rpa_signature_data', true);
         $magic_token = get_post_meta($entry_id, 'rpa_magic_token', true);
+        $signed_date = get_post_meta($entry_id, 'rpa_user_signed_date', true);
 
         if (!$project_id || !$email || !$magic_token) {
             wp_send_json_error(['message' => 'Missing data to send email.']);
         }
 
-        $pdf_path = $this->generate_pdf($entry_id, $project_id, $first_name, $last_name, $company_name, $signature_data);
+        $pdf_path = $this->generate_pdf($entry_id, $project_id, $first_name, $last_name, $company_name, $signature_data, $signed_date);
         $this->send_email_with_magic_link($email, $project_id, $magic_token, $pdf_path);
 
         wp_send_json_success(['message' => 'Email sent successfully!']);
@@ -88,16 +89,19 @@ class DealHandler
         check_ajax_referer('rpa_deal_form_nonce', 'security');
 
         $project_id = intval($_POST['project_id'] ?? 0);
-        $first_name = sanitize_text_field($_POST['first_name'] ?? '');
-        $last_name = sanitize_text_field($_POST['last_name'] ?? '');
+        $full_name = sanitize_text_field($_POST['name'] ?? '');
+        $name_parts = explode(' ', trim($full_name), 2);
+        $first_name = $name_parts[0] ?? '';
+        $last_name = $name_parts[1] ?? '';
         $company_name = sanitize_text_field($_POST['company_name'] ?? '');
         $email = sanitize_email($_POST['email'] ?? '');
-        $phone = sanitize_text_field($_POST['phone_number'] ?? '');
+        $phone = ''; // Removed from frontend but keep variable for compatibility
         $signature_data = $_POST['signature_data'] ?? ''; // Base64 image data
+        $signed_date = sanitize_text_field($_POST['signed_date'] ?? current_time('Y-m-d'));
 
         // Captcha is now validated purely on the frontend via JS.
 
-        if (!$project_id || !$first_name || !$last_name || !$email || !$signature_data) {
+        if (!$project_id || !$full_name || !$email || !$signature_data) {
             wp_send_json_error(['message' => 'Missing required fields.']);
         }
 
@@ -126,9 +130,10 @@ class DealHandler
         update_post_meta($entry_id, 'rpa_signature_data', $signature_data);
         update_post_meta($entry_id, 'rpa_magic_token', $magic_token);
         update_post_meta($entry_id, 'rpa_signed_date', current_time('mysql'));
+        update_post_meta($entry_id, 'rpa_user_signed_date', $signed_date);
 
         // Generate PDF
-        $pdf_path = $this->generate_pdf($entry_id, $project_id, $first_name, $last_name, $company_name, $signature_data);
+        $pdf_path = $this->generate_pdf($entry_id, $project_id, $first_name, $last_name, $company_name, $signature_data, $signed_date);
 
         // Send Email
         $this->send_email_with_magic_link($email, $project_id, $magic_token, $pdf_path);
@@ -143,9 +148,27 @@ class DealHandler
         ]);
     }
 
-    private function generate_pdf($entry_id, $project_id, $first_name, $last_name, $company_name, $signature_data)
+    private function generate_pdf($entry_id, $project_id, $first_name, $last_name, $company_name, $signature_data, $signed_date = null)
     {
         $property_name = get_the_title($project_id);
+        $addresses = get_post_meta($project_id, 'rpa_project_addresses', true);
+        $address = (is_array($addresses) && !empty($addresses[0])) ? $addresses[0] : '';
+        $full_name = trim($first_name . ' ' . $last_name);
+        if (!$signed_date) {
+            $signed_date = current_time('m/d/Y');
+        } else {
+            $time = strtotime($signed_date);
+            if ($time) {
+                $signed_date = date('m/d/Y', $time);
+            }
+        }
+
+        // Logo (use PNG version - DomPDF doesn't support webp)
+        $logo_path = RPA_LISTINGS_DIR . 'assets/images/cw-rpa-logo.png';
+        $logo_data = '';
+        if (file_exists($logo_path)) {
+            $logo_data = 'data:image/png;base64,' . base64_encode(file_get_contents($logo_path));
+        }
 
         $options = new Options();
         $options->set('isHtml5ParserEnabled', true);
@@ -154,18 +177,53 @@ class DealHandler
 
         $html = '
         <html>
-        <head><style>body { font-family: sans-serif; font-size: 14px; }</style></head>
+        <head>
+            <style>
+                @page { margin: 40px 50px; }
+                body { font-family: "Times New Roman", Times, serif; font-size: 11px; line-height: 1.4; color: #000; margin: 0; padding: 0; }
+                .header { text-align: right; margin-bottom: 10px; }
+                .header img { height: 55px; }
+                h1 { text-align: center; font-size: 14px; font-weight: bold; margin: 0 0 18px 0; }
+                p { margin: 0 0 10px 0; text-align: justify; }
+                .fields { margin-top: 25px; }
+                .agree-text { margin-bottom: 18px; }
+                .field-row { margin-bottom: 12px; position: relative; }
+                .field-label { font-size: 11px; }
+                .field-line { display: inline-block; border-bottom: 1px solid #000; width: 300px; min-height: 14px; vertical-align: bottom; padding-left: 4px; font-size: 11px; }
+                .sig-img { max-height: 40px; max-width: 250px; vertical-align: bottom; }
+            </style>
+        </head>
         <body>
-            <h2>Confidentiality and Buyer Registration Agreement</h2>
-            <p><strong>Property:</strong> ' . esc_html($property_name) . '</p>
-            <p>I have read and agree to the Confidentiality Agreement.</p>
-            <br><br>
-            <p><strong>Name:</strong> ' . esc_html($first_name . ' ' . $last_name) . '</p>
-            <p><strong>Company:</strong> ' . esc_html($company_name) . '</p>
-            <p><strong>Date:</strong> ' . current_time('d-m-Y H:i:s') . '</p>
-            <br>
-            <p><strong>Signature:</strong></p>
-            <img src="' . esc_attr($signature_data) . '" width="200" style="border-bottom: 1px solid #000;" />
+            ' . ($logo_data ? '<div class="header"><img src="' . $logo_data . '" /></div>' : '') . '
+
+            <h1>Confidentiality and Buyer Registration Agreement</h1>
+
+            <p>Confidentiality and Buyer Registration Agreement Cushman &amp; Wakefield U.S., Inc. ("Broker") has been retained as the exclusive advisor and broker regarding the off-market sale of the property known as <strong>' . esc_html($property_name) . '</strong>' . ($address ? ' located at <strong>' . esc_html($address) . '</strong>' : '') . '. To receive an Offering Memorandum and or financials please read, sign, and return this completed Confidentiality Agreement to Broker. The Offering Memorandum has been prepared by Broker for use by a limited number of parties and does not purport to provide a necessarily accurate summary of the property or any of the documents related thereto, nor does it purport to be all-inclusive or to contain all the information which prospective Buyers may need or desire.</p>
+
+            <p>All projections have been developed by Broker and designated sources and are based upon assumptions relating to the general economy, competition, and other factors beyond the control of the Seller and therefore are subject to variation. No representation is made by Broker or the Seller as to the accuracy or completeness of the information contained herein, and nothing contained herein shall be relied on as a promise or representation as to the future performance of the property. Although the information contained herein is believed to be correct, the Seller and its employees disclaim any responsibility for inaccuracies and expect prospective purchasers to exercise independent due diligence in verifying all such information. Further, Broker, the Seller and its employees disclaim all liability for representations and warranties, expressed and implied, contained in or omitted from the Offering Memorandum or any other written or oral communication transmitted or made available to the Buyer.</p>
+
+            <p>The Offering Memorandum does not constitute a representation that there has been no change in the business or affairs of the property or the Owner since the date of preparation of the Offering Memorandum. Analysis and verification of the information contained in the Offering Memorandum are solely the responsibility of the prospective Buyer. Additional information and an opportunity to inspect the property will be made available upon written request to interested and qualified prospective Buyers. By accepting the Offering Memorandum, you agree to indemnify, defend, protect, and hold Seller and Broker and any affiliate of Seller or Broker harmless from and against any and all claims, damages, demands, liabilities, losses, costs or expenses (including reasonable attorney\'s fees, collectively "Claims") arising, directly or indirectly from any actions or omissions of Buyer, its employees, officers, directors or agents.</p>
+
+            <p>By accepting the Offering Memorandum, Buyer acknowledges that it is aware that any Agent/Broker other than Cushman &amp; Wakefield, must be compensated by Buyer as Cushman &amp; Wakefield is not cooperating on fees. Furthermore, Buyer acknowledges that it has not had any discussion regarding this Property\'s Sale with any other broker or agent other than Broker or an agent/broker properly identified through this registration process, including but not limited to, resolutions of incomplete, conflicting, or duplicate registrations. Buyer shall indemnify and hold Seller and Broker harmless from and against any claims, causes of action or liabilities, including, without limitation, reasonable attorney\'s fees and court costs which may be incurred with respect to any claims for other real estate commissions, broker\'s fees, or finder\'s fees in relation to or in connection with the Property to the extent claimed, through or under Seller.</p>
+
+            <p>The Seller and Broker each expressly reserve the right, at their sole discretion, to reject any or all expressions of interest or offers regarding the Property and/or to terminate discussions with any entity at any time with or without notice. The Seller shall have no legal commitment or obligations to any entity reviewing the Offering Memorandum or making an offer to purchase the Property unless a written agreement for the purchase of the Property has been fully executed, delivered, and approved by the Seller and its legal counsel, and any conditions to the Seller\'s obligation thereunder have been satisfied or waived. The Offering Memorandum and the contents, except such information which is a matter of public record or is provided in sources available to the public, are of a confidential nature. By accepting the Offering Memorandum, you agree that you will hold and treat it in the strictest confidence, that you will not photocopy or duplicate it, that you will not disclose the Offering Memorandum, financials or any of the contents to any other entity (except outside advisors retained by you, if necessary, for your determination of whether or not to make an offer and from whom you have obtained an agreement of confidentiality)without prior written authorization of the Seller or Broker, and that you will not use the Offering Memorandum or any of the contents in any fashion or manner detrimental to the interest of the Seller or Broker. No employee of seller or at the subject property is to be contacted without the written approval of the listing agents and doing so would be a violation of this confidentiality agreement.</p>
+
+            <div class="fields">
+                <p class="agree-text"><span style="display:inline-block; width:12px; height:12px; border:1px solid #000; margin-right:5px; text-align:center; line-height:12px; font-size:10px;">X</span> I have read &amp; agree to terms of the Confidentiality Agreement above.</p>
+
+                <div class="field-row">
+                    <span class="field-label">Name:</span> <span class="field-line">' . esc_html($full_name) . '</span>
+                </div>
+                <div class="field-row">
+                    <span class="field-label">Company:</span> <span class="field-line">' . esc_html($company_name) . '</span>
+                </div>
+                <div class="field-row">
+                    <span class="field-label">Signature:</span> <span class="field-line"><img class="sig-img" src="' . esc_attr($signature_data) . '" /></span>
+                </div>
+                <div class="field-row">
+                    <span class="field-label">Date:</span> <span class="field-line">' . esc_html($signed_date) . '</span>
+                </div>
+            </div>
         </body>
         </html>';
 
