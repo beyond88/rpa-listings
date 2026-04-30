@@ -137,9 +137,11 @@ jQuery(document).ready(function($) {
                     '</div>';
                     $msg.html(successHtml);
 
-                    // Reload the page after 2.5 seconds to show the deal room content
+                    // Reload the page with a cache-buster to bypass both browser and server cache
                     setTimeout(function() {
-                        window.location.reload();
+                        var url = new URL(window.location.href);
+                        url.searchParams.set('rpa_refresh', Date.now());
+                        window.location.href = url.toString();
                     }, 1500);
 
                 } else {
@@ -167,6 +169,18 @@ jQuery(document).ready(function($) {
     var $docManager = $('.rpa-frontend-doc-manager');
     if ($docManager.length) {
         var projectId = $docManager.data('project-id');
+
+        // Self-healing: If page is blurred but access cookie exists, force a cache-busting reload.
+        if ($docManager.hasClass('rpa-blurred-manager')) {
+            var cookieName = 'rpa_deal_access_' + projectId;
+            if (document.cookie.split(';').some((item) => item.trim().startsWith(cookieName + '='))) {
+                console.log('RPA: Access cookie found on blurred page. Forcing refresh...');
+                var url = new URL(window.location.href);
+                url.searchParams.set('rpa_refresh', Date.now());
+                window.location.replace(url.toString());
+                return;
+            }
+        }
         var docs = $docManager.data('docs') || [];
         if (typeof docs === 'string') {
             try { docs = JSON.parse(docs); } catch(e) { docs = []; }

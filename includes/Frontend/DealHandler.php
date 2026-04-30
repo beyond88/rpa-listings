@@ -19,6 +19,7 @@ class DealHandler
         add_action('wp_ajax_nopriv_rpa_download_deal_docs', [$this, 'handle_download_docs']);
         add_action('wp_ajax_rpa_resend_magic_link', [$this, 'handle_resend_magic_link']);
         add_action('template_redirect', [$this, 'handle_magic_link']);
+        add_action('template_redirect', [$this, 'prevent_caching_if_authenticated']);
         add_action('wp_enqueue_scripts', [$this, 'enqueue_assets']);
         add_action('before_delete_post', [$this, 'clear_deal_access_transient']);
     }
@@ -349,7 +350,10 @@ class DealHandler
 
     public function handle_magic_link()
     {
-        if (isset($_GET['deal_token'])) {
+        $has_token = isset($_GET['deal_token']);
+        $has_refresh = isset($_GET['rpa_refresh']);
+
+        if ($has_token) {
             $token = sanitize_text_field($_GET['deal_token']);
 
             // Validate token
@@ -389,7 +393,12 @@ class DealHandler
                 $cookie_name = 'rpa_deal_access_' . $project_id;
                 setcookie($cookie_name, $token, time() + (86400 * 365), '/');
                 $_COOKIE[$cookie_name] = $token; // Make available to current request immediately
+            }
+        }
 
+        if ($has_token || $has_refresh) {
+            $project_id = get_the_ID();
+            if ($project_id) {
                 $clean_url = get_permalink($project_id);
                 add_action('wp_footer', function () use ($clean_url) {
                     echo '<script>if(window.history&&history.replaceState){history.replaceState(null,"","' . esc_js($clean_url) . '");}</script>';
@@ -410,42 +419,7 @@ class DealHandler
         }
 
         // Validate access
-        $cookie_name = 'rpa_deal_access_' . $project_id;
-        if (!isset($_COOKIE[$cookie_name])) {
-            wp_send_json_error(['message' => 'Access denied.']);
-        }
-        $token = sanitize_text_field($_COOKIE[$cookie_name]);
-
-        $transient_key = 'rpa_magic_token_' . md5($token);
-        $cached_project_id = get_transient($transient_key);
-
-        if (false === $cached_project_id) {
-            $args = [
-                'post_type' => 'deal_entry',
-                'post_status' => 'publish',
-                'posts_per_page' => 1,
-                'fields' => 'ids',
-                'meta_query' => [
-                    'relation' => 'AND',
-                    [
-                        'key' => 'rpa_project_id',
-                        'value' => $project_id,
-                        'compare' => '='
-                    ],
-                    [
-                        'key' => 'rpa_magic_token',
-                        'value' => $token,
-                        'compare' => '='
-                    ]
-                ]
-            ];
-
-            $query = new \WP_Query($args);
-            if (empty($query->posts)) {
-                wp_send_json_error(['message' => 'Access denied. Invalid session.']);
-            }
-            set_transient($transient_key, $project_id, 30 * DAY_IN_SECONDS);
-        } elseif ((string)$cached_project_id !== (string)$project_id) {
+        if (!self::has_access($project_id)) {
             wp_send_json_error(['message' => 'Access denied. Invalid session.']);
         }
 
@@ -516,5 +490,64 @@ class DealHandler
                 }
             }
         }
+    }
+
+    public function prevent_caching_if_authenticated()
+    {
+        if (!is_singular('project')) {
+            return;
+        }
+
+        $project_id = get_the_ID();
+        if (self::has_access($project_id)) {
+            if (!defined('DONOTCACHEPAGE')) {
+                define('DONOTCACHEPAGE', true);
+            }
+            nocache_headers();
+        }
+    }
+
+    public static function has_access($project_id)
+    {
+        $cookie_name = 'rpa_deal_access_' . $project_id;
+        if (!isset($_COOKIE[$cookie_name])) {
+            return false;
+        }
+
+        $token = sanitize_text_field($_COOKIE[$cookie_name]);
+
+        $transient_key = 'rpa_magic_token_' . md5($token);
+        $cached_project_id = get_transient($transient_key);
+
+        if (false === $cached_project_id) {
+            $args = [
+                'post_type' => 'deal_entry',
+                'post_status' => 'publish',
+                'posts_per_page' => 1,
+                'fields' => 'ids',
+                'meta_query' => [
+                    'relation' => 'AND',
+                    [
+                        'key' => 'rpa_project_id',
+                        'value' => $project_id,
+                        'compare' => '='
+                    ],
+                    [
+                        'key' => 'rpa_magic_token',
+                        'value' => $token,
+                        'compare' => '='
+                    ]
+                ]
+            ];
+
+            $query = new \WP_Query($args);
+            if (empty($query->posts)) {
+                return false;
+            }
+            set_transient($transient_key, $project_id, 30 * DAY_IN_SECONDS);
+            return true;
+        }
+
+        return (string)$cached_project_id === (string)$project_id;
     }
 }

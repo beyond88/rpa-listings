@@ -59,61 +59,14 @@ class DealRoomManager extends Widget_Base
         $this->end_controls_section();
     }
 
-    private function has_access($project_id)
-    {
-        $cookie_name = 'rpa_deal_access_' . $project_id;
-        if (!isset($_COOKIE[$cookie_name])) {
-            return false;
-        }
-
-        $token = sanitize_text_field($_COOKIE[$cookie_name]);
-
-        $transient_key = 'rpa_magic_token_' . md5($token);
-        $cached_project_id = get_transient($transient_key);
-
-        if (false === $cached_project_id) {
-            $args = [
-                'post_type' => 'deal_entry',
-                'post_status' => 'publish',
-                'posts_per_page' => 1,
-                'fields' => 'ids',
-                'meta_query' => [
-                    'relation' => 'AND',
-                    [
-                        'key' => 'rpa_project_id',
-                        'value' => $project_id,
-                        'compare' => '='
-                    ],
-                    [
-                        'key' => 'rpa_magic_token',
-                        'value' => $token,
-                        'compare' => '='
-                    ]
-                ]
-            ];
-
-            $query = new \WP_Query($args);
-            if (empty($query->posts)) {
-                return false;
-            }
-            set_transient($transient_key, $project_id, 30 * DAY_IN_SECONDS);
-            return true;
-        }
-
-        return (string)$cached_project_id === (string)$project_id;
-    }
 
     protected function render()
     {
         $settings = $this->get_settings_for_display();
         $project_id = get_the_ID();
-        $has_access = $this->has_access($project_id);
+        $has_access = \RPAListings\Frontend\DealHandler::has_access($project_id);
 
         if ($has_access) {
-            if (!defined('DONOTCACHEPAGE')) {
-                define('DONOTCACHEPAGE', true);
-            }
-            nocache_headers();
             $this->render_document_manager($project_id, false, $settings['button_text']);
         } else {
             $this->render_document_manager($project_id, true, $settings['button_text']);
