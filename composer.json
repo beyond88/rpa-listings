@@ -4,7 +4,8 @@
   "type": "wordpress-plugin",
   "license": "proprietary",
   "require": {
-    "php": ">=7.4"
+    "php": ">=7.4",
+    "dompdf/dompdf": "^3.1"
   },
   "autoload": {
     "psr-4": {

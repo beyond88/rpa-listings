@@ -1,0 +1,596 @@
+/* Deal Room Access Modal */
+.rpa-deal-room-btn {
+    background-color: #c09e6c;
+    color: #fff;
+    padding: 12px 24px;
+    border: none;
+    border-radius: 4px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+.rpa-deal-room-btn:hover {
+    background-color: #a88a5e;
+}
+
+.rpa-modal {
+    display: none;
+    position: fixed;
+    z-index: 9999;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+    overflow: auto;
+}
+.rpa-modal-content {
+    background-color: #fff;
+    margin: 5% auto;
+    padding: 30px;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 800px;
+    position: relative;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+}
+.rpa-modal-close {
+    position: absolute;
+    right: 20px;
+    top: 15px;
+    font-size: 28px;
+    font-weight: bold;
+    color: #aaa;
+    cursor: pointer;
+}
+.rpa-modal-close:hover {
+    color: #333;
+}
+
+/* CA Form Styles */
+.rpa-ca-title {
+    font-size: 24px;
+    font-weight: bold;
+    color: #1a2f55;
+    margin-bottom: 20px;
+}
+.rpa-ca-text {
+    font-size: 15px;
+    line-height: 1.6;
+    margin-bottom: 15px;
+}
+.rpa-ca-scrollable-text {
+    height: 200px;
+    overflow-y: auto;
+    border: 1px solid #ddd;
+    padding: 15px;
+    margin-bottom: 20px;
+    font-size: 13px;
+    line-height: 1.5;
+    background: #f9f9f9;
+}
+.rpa-ca-form .rpa-form-group {
+    margin-bottom: 15px;
+}
+.rpa-ca-form .rpa-form-row {
+    display: flex;
+    gap: 15px;
+}
+.rpa-ca-form .rpa-form-row .rpa-form-group {
+    flex: 1;
+}
+.rpa-ca-form label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 5px;
+    color: #333;
+}
+.rpa-ca-form input[type="text"],
+.rpa-ca-form input[type="email"],
+.rpa-ca-form input[type="tel"] {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 15px;
+}
+.rpa-req {
+    color: #e53935;
+}
+
+/* Signature Pad */
+.rpa-signature-wrapper {
+    position: relative;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background: #fff;
+}
+#rpaSignatureCanvas {
+    width: 100%;
+    height: 150px;
+    cursor: crosshair;
+}
+.rpa-clear-sig {
+    position: absolute;
+    bottom: 5px;
+    right: 5px;
+    background: #eee;
+    border: 1px solid #ccc;
+    padding: 4px 8px;
+    font-size: 12px;
+    cursor: pointer;
+    border-radius: 3px;
+}
+.rpa-clear-sig:hover {
+    background: #ddd;
+}
+
+.rpa-form-actions {
+    margin-top: 20px;
+    text-align: right;
+}
+.rpa-submit-btn {
+    background-color: #c09e6c;
+    color: #fff;
+    padding: 12px 24px;
+    border: none;
+    border-radius: 4px;
+    font-size: 16px;
+    cursor: pointer;
+}
+.rpa-submit-btn:hover {
+    background-color: #a88a5e;
+}
+.rpa-form-msg {
+    margin-top: 10px;
+    font-weight: 600;
+}
+
+/* Frontend Document Manager */
+.rpa-frontend-doc-manager {
+    border: none;
+    border-radius: 8px;
+    background: #fcfcf8;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    overflow: hidden;
+    width: 100%;
+}
+
+.rpa-doc-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 24px;
+    background: transparent;
+}
+
+.rpa-doc-toolbar-top {
+    border-bottom: 1px solid rgba(26, 47, 85, 0.1);
+}
+
+.rpa-doc-toolbar-bottom {
+    border-top: 1px solid rgba(26, 47, 85, 0.1);
+}
+
+.rpa-doc-toolbar-left, .rpa-doc-toolbar-right {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+}
+
+.rpa-doc-select-all-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: #1a2f55;
+    cursor: pointer;
+    font-weight: 600;
+    margin: 0;
+}
+
+.rpa-doc-select-all-label input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
+    border: 1px solid #1a2f55;
+    background-color: transparent;
+    cursor: pointer;
+    margin: 0;
+}
+
+.rpa-doc-sort-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.rpa-doc-sort-label {
+    font-size: 14px;
+    color: #1a2f55;
+    font-weight: 600;
+}
+
+.rpa-doc-sort-select {
+    border: none;
+    background: transparent;
+    font-size: 14px;
+    color: #1a2f55;
+    font-weight: 600;
+    cursor: pointer;
+    outline: none;
+    padding-right: 16px;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%231a2f55' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right center;
+}
+
+.rpa-view-btn {
+    background: none;
+    border: none;
+    color: rgba(26, 47, 85, 0.4);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s;
+}
+
+.rpa-view-btn:hover, .rpa-view-btn.active {
+    color: #1a2f55;
+}
+
+.rpa-doc-grid-container {
+    padding: 24px;
+    background: transparent;
+    min-height: 200px;
+}
+
+.rpa-doc-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 24px;
+}
+
+/* List View Styles */
+.rpa-doc-grid.list-view {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.rpa-doc-grid.list-view .rpa-doc-item {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    padding: 16px;
+    border: none;
+    border-bottom: 1px solid rgba(26, 47, 85, 0.1);
+    border-radius: 0;
+    box-shadow: none;
+}
+
+.rpa-doc-grid.list-view .rpa-doc-item:hover {
+    background-color: rgba(26, 47, 85, 0.03);
+}
+
+.rpa-doc-grid.list-view .rpa-doc-item.selected {
+    background-color: rgba(192, 158, 108, 0.1);
+}
+
+.rpa-doc-list-header {
+    display: flex;
+    align-items: center;
+    padding: 0 16px 12px 16px;
+    border-bottom: 1px solid rgba(26, 47, 85, 0.1);
+    font-size: 13px;
+    font-weight: 600;
+    color: #1a2f55;
+}
+
+.rpa-doc-list-col-check {
+    width: 48px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.rpa-doc-list-col-name {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.rpa-doc-list-col-count {
+    width: 60px;
+    flex-shrink: 0;
+    color: #1a2f55;
+    opacity: 0.7;
+    font-size: 14px;
+    text-align: center;
+}
+
+.rpa-doc-list-col-size {
+    width: 100px;
+    flex-shrink: 0;
+    color: #1a2f55;
+    opacity: 0.7;
+    font-size: 14px;
+    text-align: right;
+    padding-right: 20px;
+}
+
+.rpa-doc-list-col-date {
+    width: 120px;
+    flex-shrink: 0;
+    color: #1a2f55;
+    opacity: 0.7;
+    font-size: 14px;
+}
+
+.rpa-doc-list-col-creator {
+    width: 150px;
+    flex-shrink: 0;
+    color: #1a2f55;
+    opacity: 0.7;
+    font-size: 14px;
+}
+
+.rpa-doc-grid.list-view .rpa-doc-checkbox {
+    position: relative;
+    top: auto;
+    left: auto;
+    margin: 0;
+}
+
+.rpa-doc-list-title {
+    font-size: 15px;
+    color: #1a2f55;
+    font-weight: 600;
+}
+
+.rpa-doc-icon.pdf svg {
+    fill: #dc2626;
+}
+
+.rpa-doc-list-col-name .rpa-doc-icon,
+.rpa-doc-list-col-name .rpa-doc-preview {
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.rpa-doc-list-col-name .rpa-doc-icon svg,
+.rpa-doc-list-col-name .rpa-doc-preview img {
+    width: 24px;
+    height: 24px;
+    object-fit: cover;
+    border-radius: 4px;
+}
+
+.rpa-doc-item {
+    background: transparent;
+    border: 1px solid rgba(26, 47, 85, 0.1);
+    border-radius: 4px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    flex-direction: column;
+}
+
+.rpa-doc-item:hover {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    border-color: rgba(26, 47, 85, 0.2);
+    background-color: rgba(255, 255, 255, 0.4);
+}
+
+.rpa-doc-item.selected {
+    border-color: #c09e6c;
+    box-shadow: 0 0 0 1px #c09e6c;
+}
+
+.rpa-doc-item-top {
+    background: rgba(26, 47, 85, 0.05);
+    height: 140px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.rpa-doc-checkbox {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+    border: 1px solid #1a2f55;
+    background-color: transparent;
+    cursor: pointer;
+    margin: 0;
+    z-index: 2;
+}
+
+.rpa-doc-item.selected .rpa-doc-checkbox {
+    border-color: #c09e6c;
+    background-color: #c09e6c;
+}
+
+.rpa-doc-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.rpa-doc-preview {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    box-sizing: border-box;
+}
+
+.rpa-doc-preview img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    border-radius: 4px;
+}
+
+.rpa-doc-item-bottom {
+    padding: 16px;
+    background: transparent;
+    border-top: 1px solid rgba(26, 47, 85, 0.1);
+}
+
+.rpa-doc-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1a2f55;
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.rpa-doc-meta {
+    font-size: 12px;
+    color: #1a2f55;
+    opacity: 0.7;
+}
+
+.rpa-doc-selected-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.rpa-doc-selected-badge {
+    background: rgba(26, 47, 85, 0.1);
+    color: #1a2f55;
+    font-size: 14px;
+    font-weight: 600;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+}
+
+.rpa-doc-selected-text {
+    font-size: 14px;
+    color: #1a2f55;
+    font-weight: 600;
+}
+
+.rpa-btn-download {
+    background-color: #c09e6c;
+    color: #fff;
+    padding: 10px 24px;
+    border: none;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.rpa-btn-download:hover:not(:disabled) {
+    background-color: #a88a5e;
+}
+
+.rpa-btn-download:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Blurred Manager Styles */
+.rpa-blurred-manager {
+    position: relative;
+    user-select: none;
+}
+
+.rpa-blurred-manager .rpa-doc-content-wrapper {
+    filter: blur(8px);
+    opacity: 0.7;
+    transition: all 0.3s ease;
+    pointer-events: none;
+}
+
+.rpa-blur-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: auto;
+    background: rgba(255, 255, 255, 0.1);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.rpa-blurred-manager:hover .rpa-blur-overlay {
+    opacity: 1;
+}
+
+.rpa-overlay-btn {
+    pointer-events: auto;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    transform: translateY(10px);
+    transition: transform 0.3s ease, background-color 0.3s;
+}
+
+.rpa-blurred-manager:hover .rpa-overlay-btn {
+    transform: translateY(0);
+}
+
+.rpa-access-granted-msg {
+    padding: 12px 24px;
+    background-color: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    color: #166534;
+    border-radius: 4px;
+    font-weight: 500;
+    display: inline-block;
+}
+
+/* Responsive Styles for Modal Form */
+@media (max-width: 768px) {
+    .rpa-modal-content {
+        width: 95%;
+        margin: 10% auto;
+        padding: 20px;
+    }
+    .rpa-ca-form .rpa-form-row {
+        flex-direction: column;
+        gap: 0;
+    }
+    .rpa-ca-title {
+        font-size: 20px;
+    }
+    .rpa-doc-toolbar {
+        flex-direction: column;
+        gap: 15px;
+        align-items: flex-start;
+    }
+}

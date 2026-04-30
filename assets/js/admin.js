@@ -406,4 +406,64 @@
 
 		renderDocManager();
 	};
+
+	// Handle Send Email button in Deal Entry meta box
+	onReady(() => {
+		const resendBtn = document.getElementById('rpa-resend-magic-link');
+		if (resendBtn) {
+			// Add hover effect via JS since inline styles don't support pseudo-classes
+			resendBtn.addEventListener('mouseenter', function() {
+				if (!this.disabled) this.style.backgroundColor = '#2563eb';
+			});
+			resendBtn.addEventListener('mouseleave', function() {
+				if (!this.disabled) this.style.backgroundColor = '#3b82f6';
+			});
+
+			resendBtn.addEventListener('click', function (e) {
+				e.preventDefault();
+				const entryId = this.getAttribute('data-entry-id');
+				const msgEl = document.getElementById('rpa-resend-msg');
+
+				this.disabled = true;
+				this.style.opacity = '0.7';
+				this.style.cursor = 'not-allowed';
+				this.innerHTML = '<svg class="rpa-spinner" viewBox="0 0 50 50" style="width: 14px; height: 14px; animation: rpa-spin 1s linear infinite;"><circle cx="25" cy="25" r="20" fill="none" stroke="currentColor" stroke-width="5" stroke-dasharray="31.4 31.4" style="stroke-linecap: round;"></circle></svg> Sending...';
+				msgEl.textContent = '';
+				msgEl.style.color = '';
+
+				jQuery.ajax({
+					url: ajaxurl,
+					type: 'POST',
+					data: {
+						action: 'rpa_resend_magic_link',
+						security: window.rpaListingsAdmin ? window.rpaListingsAdmin.nonce : '',
+						entry_id: entryId
+					},
+					success: function (res) {
+						resendBtn.disabled = false;
+						resendBtn.style.opacity = '1';
+						resendBtn.style.cursor = 'pointer';
+						resendBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg> Send Email';
+						
+						if (res.success) {
+							msgEl.style.color = '#16a34a';
+							msgEl.textContent = res.data.message;
+							setTimeout(() => { msgEl.textContent = ''; }, 3000);
+						} else {
+							msgEl.style.color = '#dc2626';
+							msgEl.textContent = res.data.message || 'Error sending email.';
+						}
+					},
+					error: function () {
+						resendBtn.disabled = false;
+						resendBtn.style.opacity = '1';
+						resendBtn.style.cursor = 'pointer';
+						resendBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg> Send Email';
+						msgEl.style.color = '#dc2626';
+						msgEl.textContent = 'Server error.';
+					}
+				});
+			});
+		}
+	});
 })();

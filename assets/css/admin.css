@@ -100,6 +100,11 @@
 	border-color: #1a1a3a;
 }
 
+@keyframes rpa-spin {
+	from { transform: rotate(0deg); }
+	to { transform: rotate(360deg); }
+}
+
 .rpa-project-meta .rpa-address {
 	border: 1px solid #dcdcde;
 	border-radius: 6px;
@@ -337,4 +342,9 @@
 	object-fit: cover;
 	margin-bottom: 8px;
 	border-radius: 2px;
+}
+
+@keyframes rpa-spin {
+	from { transform: rotate(0deg); }
+	to { transform: rotate(360deg); }
 }

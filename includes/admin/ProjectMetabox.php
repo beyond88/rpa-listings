@@ -8,22 +8,16 @@ final class ProjectMetabox
 	private const NONCE_NAME = 'rpa_project_meta_nonce';
 	private const MAX_ADDRESSES = 5;
 
-	private const META_NSFR = 'rpa_project_nsrf';
-	private const META_PRICE = 'rpa_project_price';
 	private const META_PROPERTY_TYPES = 'rpa_project_property_types';
 	private const META_STATUS = 'rpa_project_status';
 	private const META_LISTING_STATUS = 'rpa_project_listing_status';
-	private const META_CITY = 'rpa_project_city';
-	private const META_STATE = 'rpa_project_state';
 	private const META_ADDRESSES = 'rpa_project_addresses';
-	private const META_SITE_PLAN_ID = 'rpa_project_site_plan_id';
 	private const META_AMENITIES = 'rpa_project_amenities';
-	private const META_AMENITIES_TYPED = 'rpa_project_amenities_typed';
-	private const META_GALLERY = 'rpa_project_gallery_ids';
-	private const META_SOLD_SUMMARY = 'rpa_project_sold_summary';
-	private const META_TEASER_DESC = 'rpa_project_teaser_desc';
-	private const META_FULL_DESC = 'rpa_project_full_desc';
-	private const META_DOCUMENTS = 'rpa_project_documents';
+	private const META_SOLD_SUMMARY  = 'rpa_project_sold_summary';
+	private const META_SOLD_NRSF     = 'rpa_project_sold_nrsf';
+	private const META_SOLD_UNITS    = 'rpa_project_sold_units';
+	private const META_SOLD_DATE     = 'rpa_project_sold_date';
+	private const META_DOCUMENTS     = 'rpa_project_documents';
 
 	public function register(): void
 	{
@@ -42,14 +36,6 @@ final class ProjectMetabox
 			'high'
 		);
 
-		add_meta_box(
-			'rpa-project-descriptions',
-			esc_html__('Descriptions', 'rpa-listings'),
-			[$this, 'render_descriptions'],
-			'project',
-			'normal',
-			'high'
-		);
 
 		add_meta_box(
 			'rpa-project-sold-info',
@@ -74,15 +60,11 @@ final class ProjectMetabox
 	{
 		wp_nonce_field(self::NONCE_ACTION, self::NONCE_NAME);
 
-		$nsrf = (string) get_post_meta($post->ID, self::META_NSFR, true);
-		$price = (string) get_post_meta($post->ID, self::META_PRICE, true);
 		$status = (string) get_post_meta($post->ID, self::META_STATUS, true);
 		$listing_status = (string) get_post_meta($post->ID, self::META_LISTING_STATUS, true);
 		if ($listing_status === '') {
 			$listing_status = 'active';
 		}
-		$city = (string) get_post_meta($post->ID, self::META_CITY, true);
-		$state = (string) get_post_meta($post->ID, self::META_STATE, true);
 
 		$property_types = get_post_meta($post->ID, self::META_PROPERTY_TYPES, true);
 		if (!is_array($property_types)) {
@@ -98,18 +80,9 @@ final class ProjectMetabox
 			$addresses[] = '';
 		}
 
-		$site_plan_id = (int) get_post_meta($post->ID, self::META_SITE_PLAN_ID, true);
-		$site_plan_url = $site_plan_id ? wp_get_attachment_url($site_plan_id) : '';
-
 		$amenities = get_post_meta($post->ID, self::META_AMENITIES, true);
 		if (!is_array($amenities)) {
 			$amenities = [];
-		}
-		$amenities_typed = (string) get_post_meta($post->ID, self::META_AMENITIES_TYPED, true);
-
-		$gallery_ids = get_post_meta($post->ID, self::META_GALLERY, true);
-		if (!is_array($gallery_ids)) {
-			$gallery_ids = [];
 		}
 
 		$property_type_options = [
@@ -164,16 +137,6 @@ final class ProjectMetabox
 		echo '</div>';
 
 		echo '<div class="rpa-row">';
-		echo '<label class="rpa-label" for="rpa_project_nsrf">' . esc_html__('NSRF', 'rpa-listings') . '</label>';
-		echo '<input class="regular-text" type="text" id="rpa_project_nsrf" name="rpa_project_nsrf" value="' . esc_attr($nsrf) . '" />';
-		echo '</div>';
-
-		echo '<div class="rpa-row">';
-		echo '<label class="rpa-label" for="rpa_project_price">' . esc_html__('Price', 'rpa-listings') . '</label>';
-		echo '<input class="regular-text" type="text" id="rpa_project_price" name="rpa_project_price" placeholder="' . esc_attr__('$100k or Market Bid', 'rpa-listings') . '" value="' . esc_attr($price) . '" />';
-		echo '</div>';
-
-		echo '<div class="rpa-row">';
 		echo '<label class="rpa-label" for="rpa_project_status">' . esc_html__('Status', 'rpa-listings') . '</label>';
 		echo '<select id="rpa_project_status" name="rpa_project_status">';
 		echo '<option value="">' . esc_html__('Select', 'rpa-listings') . '</option>';
@@ -192,16 +155,6 @@ final class ProjectMetabox
 			echo '<option value="' . esc_attr($value) . '"' . $selected . '>' . $label . '</option>';
 		}
 		echo '</select>';
-		echo '</div>';
-
-		echo '<div class="rpa-row">';
-		echo '<label class="rpa-label" for="rpa_project_city">' . esc_html__('City', 'rpa-listings') . '</label>';
-		echo '<input class="regular-text" type="text" id="rpa_project_city" name="rpa_project_city" value="' . esc_attr($city) . '" />';
-		echo '</div>';
-
-		echo '<div class="rpa-row">';
-		echo '<label class="rpa-label" for="rpa_project_state">' . esc_html__('State', 'rpa-listings') . '</label>';
-		echo '<input class="regular-text" type="text" id="rpa_project_state" name="rpa_project_state" value="' . esc_attr($state) . '" />';
 		echo '</div>';
 
 		echo '</div>';
@@ -226,22 +179,6 @@ final class ProjectMetabox
 		echo '<hr />';
 
 		echo '<div class="rpa-row">';
-		echo '<span class="rpa-label">' . esc_html__('Site Plan', 'rpa-listings') . '</span>';
-		echo '<input type="hidden" id="rpa_project_site_plan_id" name="rpa_project_site_plan_id" value="' . esc_attr((string) $site_plan_id) . '" />';
-		echo '<button type="button" class="button" data-rpa-upload="site-plan">' . esc_html__('Upload / Select File', 'rpa-listings') . '</button>';
-		echo '<button type="button" class="button" data-rpa-clear="site-plan">' . esc_html__('Remove', 'rpa-listings') . '</button>';
-		echo '<div class="rpa-file">';
-		if ($site_plan_url) {
-			echo '<a href="' . esc_url($site_plan_url) . '" target="_blank" rel="noreferrer">' . esc_html(basename($site_plan_url)) . '</a>';
-		} else {
-			echo '<span class="description">' . esc_html__('No file selected', 'rpa-listings') . '</span>';
-		}
-		echo '</div>';
-		echo '</div>';
-
-		echo '<hr />';
-
-		echo '<div class="rpa-row">';
 		echo '<span class="rpa-label">' . esc_html__('Property Amenities', 'rpa-listings') . '</span>';
 		echo '<div class="rpa-checkboxes">';
 		foreach ($amenity_options as $value => $label) {
@@ -254,76 +191,6 @@ final class ProjectMetabox
 		echo '</div>';
 		echo '</div>';
 
-		echo '<div class="rpa-row">';
-		echo '<label class="rpa-label" for="rpa_project_amenities_typed">' . esc_html__('Typed Responses', 'rpa-listings') . '</label>';
-		echo '<textarea class="large-text" rows="3" id="rpa_project_amenities_typed" name="rpa_project_amenities_typed" placeholder="' . esc_attr__('Comma separated or one per line', 'rpa-listings') . '">' . esc_textarea($amenities_typed) . '</textarea>';
-		echo '</div>';
-
-		echo '<div class="rpa-row">';
-		echo '<span class="rpa-label">' . esc_html__('Image Gallery', 'rpa-listings') . '</span>';
-		echo '<input type="hidden" id="rpa_project_gallery_ids" name="rpa_project_gallery_ids" value="' . esc_attr(implode(',', array_map('intval', $gallery_ids))) . '" />';
-		echo '<button type="button" class="button" data-rpa-upload="gallery">' . esc_html__('Add / Select Images', 'rpa-listings') . '</button>';
-		echo '<button type="button" class="button" data-rpa-clear="gallery">' . esc_html__('Clear Gallery', 'rpa-listings') . '</button>';
-		echo '<div class="rpa-gallery" id="rpa_project_gallery_preview">';
-		foreach ($gallery_ids as $id) {
-			$id = (int) $id;
-			if (!$id) {
-				continue;
-			}
-			$image = wp_get_attachment_image($id, 'thumbnail');
-			if (!$image) {
-				continue;
-			}
-			echo '<span class="rpa-gallery-item" data-id="' . esc_attr((string) $id) . '">';
-			echo '<button type="button" class="rpa-gallery-remove" aria-label="' . esc_attr__('Remove image', 'rpa-listings') . '"><span class="dashicons dashicons-no-alt"></span></button>';
-			echo $image;
-			echo '</span>';
-		}
-		echo '</div>';
-		echo '</div>';
-
-		echo '</div>';
-	}
-
-	public function render_descriptions(\WP_Post $post, array $box = []): void
-	{
-		$teaser_desc = get_post_meta($post->ID, self::META_TEASER_DESC, true);
-		$full_desc = get_post_meta($post->ID, self::META_FULL_DESC, true);
-
-		echo '<div class="rpa-project-meta">';
-
-		echo '<div class="rpa-row">';
-		echo '<label class="rpa-label" for="rpa_project_teaser_desc">' . esc_html__('Teaser Description', 'rpa-listings') . '</label>';
-		wp_editor(
-			(string) $teaser_desc,
-			'rpa_project_teaser_desc',
-			[
-				'textarea_name' => 'rpa_project_teaser_desc',
-				'textarea_rows' => 6,
-				'media_buttons' => true,
-				'tinymce'       => true,
-				'quicktags'     => true,
-			]
-		);
-		echo '</div>';
-
-		echo '<hr />';
-
-		echo '<div class="rpa-row">';
-		echo '<label class="rpa-label" for="rpa_project_full_desc">' . esc_html__('Full Description', 'rpa-listings') . '</label>';
-		wp_editor(
-			(string) $full_desc,
-			'rpa_project_full_desc',
-			[
-				'textarea_name' => 'rpa_project_full_desc',
-				'textarea_rows' => 12,
-				'media_buttons' => true,
-				'tinymce'       => true,
-				'quicktags'     => true,
-			]
-		);
-		echo '</div>';
-
 		echo '</div>';
 	}
 
@@ -331,7 +198,85 @@ final class ProjectMetabox
 	{
 		$sold_summary = get_post_meta($post->ID, self::META_SOLD_SUMMARY, true);
 
-		echo '<div class="rpa-project-meta">';
+		// Pull existing property data for auto-populate
+		$property_name  = get_the_title($post->ID);
+		$property_types = get_post_meta($post->ID, self::META_PROPERTY_TYPES, true);
+		$property_type  = (is_array($property_types) && !empty($property_types)) ? implode(', ', $property_types) : '';
+
+		// Pull ACF fields via PHP for reliability
+		$nrsf  = function_exists('get_field') ? get_field('property_size', $post->ID) : '';
+		$units = function_exists('get_field') ? get_field('flat_size', $post->ID) : '';
+		$date  = get_post_meta($post->ID, self::META_SOLD_DATE, true);
+
+		// No individual fields needed except for the summary editor
+		echo '<div style="margin-bottom: 16px;">';
+		echo '</div>'; 
+
+		// ── Auto-populate button ────────────────────────────────────────────────
+		echo '<p style="margin-bottom: 12px;">';
+		echo '<button type="button" id="rpa-autopopulate-sold-summary" class="button button-secondary">';
+		echo esc_html__('&#9998; Auto-populate Summary', 'rpa-listings');
+		echo '</button>';
+		echo '<span style="margin-left: 10px; color: #666; font-size: 12px;">' . esc_html__('Fills the editor below with the fields above — you can still edit afterwards.', 'rpa-listings') . '</span>';
+		echo '</p>';
+
+		// Encode data for JS
+		$js_data = wp_json_encode([
+			'name'          => $property_name,
+			'property_type' => $property_type,
+			'nrsf'          => $nrsf,
+			'units'         => $units,
+			'date'          => $date,
+			'editor_id'     => 'rpa_project_sold_summary',
+		]);
+		echo '<script>
+(function(){
+	var d = ' . $js_data . ';
+	
+	var generateSummary = function() {
+		return "Name: " + d.name + "\n" +
+			"Property Type: " + d.property_type + "\n" +
+			"NRSF: " + (d.nrsf || "") + "\n" +
+			"Units: " + (d.units || "") + "\n" +
+			"Date Sold: " + (d.date || "");
+	};
+
+	document.getElementById("rpa-autopopulate-sold-summary").addEventListener("click", function(){
+		var summary = generateSummary();
+		if (typeof tinyMCE !== "undefined" && tinyMCE.get(d.editor_id)) {
+			tinyMCE.get(d.editor_id).setContent(summary.replace(/\n/g, "<br>"));
+		} else {
+			var ta = document.getElementById(d.editor_id);
+			if (ta) ta.value = summary;
+		}
+	});
+	
+	// Pre-fill if empty
+	window.addEventListener("load", function() {
+		setTimeout(function() {
+			var currentContent = "";
+			if (typeof tinyMCE !== "undefined" && tinyMCE.get(d.editor_id)) {
+				currentContent = tinyMCE.get(d.editor_id).getContent({format: "text"}).trim();
+			} else {
+				var ta = document.getElementById(d.editor_id);
+				if (ta) currentContent = ta.value.trim();
+			}
+			
+			if (currentContent === "") {
+				var summary = generateSummary();
+				if (typeof tinyMCE !== "undefined" && tinyMCE.get(d.editor_id)) {
+					tinyMCE.get(d.editor_id).setContent(summary.replace(/\n/g, "<br>"));
+				} else {
+					var ta = document.getElementById(d.editor_id);
+					if (ta) ta.value = summary;
+				}
+			}
+		}, 1000);
+	});
+})();
+</script>';
+
+		// ── Sold summary editor ────────────────────────────────────────────────
 		echo '<div class="rpa-row">';
 		echo '<label class="rpa-label" for="rpa_project_sold_summary">' . esc_html__('Sold summary', 'rpa-listings') . '</label>';
 
@@ -389,12 +334,6 @@ final class ProjectMetabox
 			return;
 		}
 
-		$nsrf = isset($_POST['rpa_project_nsrf']) ? sanitize_text_field((string) $_POST['rpa_project_nsrf']) : '';
-		update_post_meta($post_id, self::META_NSFR, $nsrf);
-
-		$price = isset($_POST['rpa_project_price']) ? sanitize_text_field((string) $_POST['rpa_project_price']) : '';
-		update_post_meta($post_id, self::META_PRICE, $price);
-
 		$allowed_property_types = array_keys($this->property_type_options());
 		$property_types = isset($_POST['rpa_project_property_types']) && is_array($_POST['rpa_project_property_types'])
 			? array_values(array_unique(array_filter(array_map('sanitize_text_field', $_POST['rpa_project_property_types']))))
@@ -422,19 +361,6 @@ final class ProjectMetabox
 		$addresses = array_values(array_filter($addresses, static fn($v) => $v !== ''));
 		update_post_meta($post_id, self::META_ADDRESSES, $addresses);
 
-		$city = isset($_POST['rpa_project_city']) ? sanitize_text_field((string) $_POST['rpa_project_city']) : '';
-		update_post_meta($post_id, self::META_CITY, $city);
-
-		$state = isset($_POST['rpa_project_state']) ? sanitize_text_field((string) $_POST['rpa_project_state']) : '';
-		update_post_meta($post_id, self::META_STATE, $state);
-
-		$site_plan_id = isset($_POST['rpa_project_site_plan_id']) ? (int) $_POST['rpa_project_site_plan_id'] : 0;
-		if ($site_plan_id > 0) {
-			update_post_meta($post_id, self::META_SITE_PLAN_ID, $site_plan_id);
-		} else {
-			delete_post_meta($post_id, self::META_SITE_PLAN_ID);
-		}
-
 		$allowed_amenities = array_keys($this->amenity_options());
 		$amenities = isset($_POST['rpa_project_amenities']) && is_array($_POST['rpa_project_amenities'])
 			? array_values(array_unique(array_filter(array_map('sanitize_text_field', $_POST['rpa_project_amenities']))))
@@ -442,27 +368,9 @@ final class ProjectMetabox
 		$amenities = array_values(array_intersect($amenities, $allowed_amenities));
 		update_post_meta($post_id, self::META_AMENITIES, $amenities);
 
-		$amenities_typed = isset($_POST['rpa_project_amenities_typed']) ? sanitize_textarea_field((string) $_POST['rpa_project_amenities_typed']) : '';
-		update_post_meta($post_id, self::META_AMENITIES_TYPED, $amenities_typed);
-
-		$gallery_ids_raw = isset($_POST['rpa_project_gallery_ids']) ? (string) $_POST['rpa_project_gallery_ids'] : '';
-		$gallery_ids = array_filter(array_map('intval', preg_split('/\s*,\s*/', $gallery_ids_raw)));
-		$gallery_ids = array_values(array_unique(array_filter($gallery_ids, static fn($v) => $v > 0)));
-		update_post_meta($post_id, self::META_GALLERY, $gallery_ids);
-
 		if (isset($_POST['rpa_project_sold_summary'])) {
 			$sold_summary = wp_kses_post(wp_unslash($_POST['rpa_project_sold_summary']));
 			update_post_meta($post_id, self::META_SOLD_SUMMARY, $sold_summary);
-		}
-
-		if (isset($_POST['rpa_project_teaser_desc'])) {
-			$teaser_desc = wp_kses_post(wp_unslash($_POST['rpa_project_teaser_desc']));
-			update_post_meta($post_id, self::META_TEASER_DESC, $teaser_desc);
-		}
-
-		if (isset($_POST['rpa_project_full_desc'])) {
-			$full_desc = wp_kses_post(wp_unslash($_POST['rpa_project_full_desc']));
-			update_post_meta($post_id, self::META_FULL_DESC, $full_desc);
 		}
 
 		if (isset($_POST['rpa_project_documents'])) {

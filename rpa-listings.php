@@ -12,7 +12,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RPA_LISTINGS_VERSION', '0.1.0');
+define('RPA_LISTINGS_VERSION', '0.1.2');
 define('RPA_LISTINGS_FILE', __FILE__);
 define('RPA_LISTINGS_DIR', plugin_dir_path(__FILE__));
 define('RPA_LISTINGS_URL', plugin_dir_url(__FILE__));
@@ -22,8 +22,8 @@ if (file_exists($autoload)) {
     require_once $autoload;
 } else {
     require_once RPA_LISTINGS_DIR . 'includes/Plugin.php';
-    require_once RPA_LISTINGS_DIR . 'includes/admin/Admin.php';
-    require_once RPA_LISTINGS_DIR . 'includes/admin/ProjectMetabox.php';
+    require_once RPA_LISTINGS_DIR . 'includes/Admin/Admin.php';
+    require_once RPA_LISTINGS_DIR . 'includes/Admin/ProjectMetabox.php';
 }
 
 add_action('plugins_loaded', static function () {
