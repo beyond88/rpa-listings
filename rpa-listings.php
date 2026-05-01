@@ -3,7 +3,7 @@
 /**
  * Plugin Name: RPA Listings
  * Description: RPA Listings plugin.
- * Version: 1.0.0
+ * Version: 1.0.1
  * Author: Mohiuddin Abulkul Kader
  * Text Domain: rpa-listings
  */
