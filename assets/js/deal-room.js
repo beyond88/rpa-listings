@@ -5,6 +5,15 @@ jQuery(document).ready(function($) {
     window.openDealRoomModal = function() {
         $('#rpa-captcha-answer').val('');
         
+        var $dateInput = $('.rpa-ca-date-input');
+        if ($dateInput.length > 0 && !$dateInput.val()) {
+            var today = new Date();
+            var yyyy = today.getFullYear();
+            var mm = String(today.getMonth() + 1).padStart(2, '0');
+            var dd = String(today.getDate()).padStart(2, '0');
+            $dateInput.val(yyyy + '-' + mm + '-' + dd);
+        }
+        
         // Smart Captcha Logic: 
         // Handles both new HTML (with spans) and old cached HTML (hardcoded text)
         var $label = $('.rpa-captcha-group label');
@@ -67,14 +76,40 @@ jQuery(document).ready(function($) {
         window.addEventListener("resize", resizeCanvas);
     }
 
+    // 2.5 Signature Mode Toggle
+    $('input[name="signature_type"]').on('change', function() {
+        if ($(this).val() === 'type') {
+            $('.rpa-ca-sig-type-wrap').show();
+            $('.rpa-ca-sig-wrap').hide();
+            $('#rpaSignatureTextInput').prop('required', true);
+        } else {
+            $('.rpa-ca-sig-type-wrap').hide();
+            $('.rpa-ca-sig-wrap').show();
+            $('#rpaSignatureTextInput').prop('required', false);
+            if (typeof resizeCanvas === 'function') {
+                resizeCanvas();
+            }
+        }
+    });
+
     // 3. Form Submission
     $('#rpaDealRoomForm').on('submit', function(e) {
         e.preventDefault();
 
+        var sigType = $('input[name="signature_type"]:checked').val() || 'type';
+
         // 1. Validate signature
-        if (signaturePad && signaturePad.isEmpty()) {
-            $('.rpa-form-msg').css('color', 'red').text('Please provide a signature first.');
-            return;
+        if (sigType === 'draw') {
+            if (signaturePad && signaturePad.isEmpty()) {
+                $('.rpa-form-msg').css('color', 'red').text('Please provide a signature first.');
+                return;
+            }
+        } else {
+            var textSig = $('#rpaSignatureTextInput').val().trim();
+            if (!textSig) {
+                $('.rpa-form-msg').css('color', 'red').text('Please type your signature first.');
+                return;
+            }
         }
 
         // 2. Validate math captcha locally
@@ -95,8 +130,12 @@ jQuery(document).ready(function($) {
             return;
         }
 
-        var signatureData = signaturePad.toDataURL();
-        $('#rpaSignatureData').val(signatureData);
+        if (sigType === 'draw') {
+            var signatureData = signaturePad.toDataURL();
+            $('#rpaSignatureData').val(signatureData);
+        } else {
+            $('#rpaSignatureData').val($('#rpaSignatureTextInput').val().trim());
+        }
 
         // Use FormData instead of serialize() to avoid URL-encoding the large base64 signature
         var formData = new FormData(this);

@@ -71,6 +71,7 @@ class DealHandler
         $company_name = get_post_meta($entry_id, 'rpa_company_name', true);
         $email = get_post_meta($entry_id, 'rpa_email', true);
         $signature_data = get_post_meta($entry_id, 'rpa_signature_data', true);
+        $signature_type = get_post_meta($entry_id, 'rpa_signature_type', true) ?: 'draw';
         $magic_token = get_post_meta($entry_id, 'rpa_magic_token', true);
         $signed_date = get_post_meta($entry_id, 'rpa_user_signed_date', true);
 
@@ -78,7 +79,7 @@ class DealHandler
             wp_send_json_error(['message' => 'Missing data to send email.']);
         }
 
-        $pdf_path = $this->generate_pdf($entry_id, $project_id, $first_name, $last_name, $company_name, $signature_data, $signed_date);
+        $pdf_path = $this->generate_pdf($entry_id, $project_id, $first_name, $last_name, $company_name, $signature_data, $signed_date, $signature_type);
         $this->send_email_with_magic_link($email, $project_id, $magic_token, $pdf_path);
 
         wp_send_json_success(['message' => 'Email sent successfully!']);
@@ -95,14 +96,25 @@ class DealHandler
         $last_name = $name_parts[1] ?? '';
         $company_name = sanitize_text_field($_POST['company_name'] ?? '');
         $email = sanitize_email($_POST['email'] ?? '');
-        $phone = ''; // Removed from frontend but keep variable for compatibility
-        $signature_data = $_POST['signature_data'] ?? ''; // Base64 image data
-        $signed_date = sanitize_text_field($_POST['signed_date'] ?? current_time('Y-m-d'));
+        $phone = sanitize_text_field($_POST['phone'] ?? '');
+        $signature_data = $_POST['signature_data'] ?? ''; // Base64 image data or text
+        $signature_type = sanitize_text_field($_POST['signature_type'] ?? 'type'); // 'type' or 'draw'
+        $signed_date = sanitize_text_field($_POST['signed_date'] ?? '');
 
         // Captcha is now validated purely on the frontend via JS.
 
-        if (!$project_id || !$full_name || !$email || !$signature_data) {
-            wp_send_json_error(['message' => 'Missing required fields.']);
+        $agree_terms = isset($_POST['agree_terms']) ? true : false;
+
+        if (!$agree_terms) {
+            wp_send_json_error(['message' => 'You must agree to the Confidentiality Agreement.']);
+        }
+
+        if (!$project_id || empty(trim($full_name)) || empty(trim($company_name)) || empty($email) || empty(trim($phone)) || empty(trim($signature_data)) || empty(trim($signed_date))) {
+            wp_send_json_error(['message' => 'All required fields (Name, Company, Email, Phone, Signature, Date) must be filled.']);
+        }
+
+        if (!is_email($email)) {
+            wp_send_json_error(['message' => 'Please provide a valid email address.']);
         }
 
         // Generate magic token
@@ -128,12 +140,13 @@ class DealHandler
         update_post_meta($entry_id, 'rpa_email', $email);
         update_post_meta($entry_id, 'rpa_phone_number', $phone);
         update_post_meta($entry_id, 'rpa_signature_data', $signature_data);
+        update_post_meta($entry_id, 'rpa_signature_type', $signature_type);
         update_post_meta($entry_id, 'rpa_magic_token', $magic_token);
         update_post_meta($entry_id, 'rpa_signed_date', current_time('mysql'));
         update_post_meta($entry_id, 'rpa_user_signed_date', $signed_date);
 
         // Generate PDF
-        $pdf_path = $this->generate_pdf($entry_id, $project_id, $first_name, $last_name, $company_name, $signature_data, $signed_date);
+        $pdf_path = $this->generate_pdf($entry_id, $project_id, $first_name, $last_name, $company_name, $signature_data, $signed_date, $signature_type);
 
         // Send Email
         $this->send_email_with_magic_link($email, $project_id, $magic_token, $pdf_path);
@@ -148,7 +161,7 @@ class DealHandler
         ]);
     }
 
-    private function generate_pdf($entry_id, $project_id, $first_name, $last_name, $company_name, $signature_data, $signed_date = null)
+    private function generate_pdf($entry_id, $project_id, $first_name, $last_name, $company_name, $signature_data, $signed_date = null, $signature_type = 'draw')
     {
         $property_name = get_the_title($project_id);
         $addresses = get_post_meta($project_id, 'rpa_project_addresses', true);
@@ -218,7 +231,11 @@ class DealHandler
                     <span class="field-label">Company:</span> <span class="field-line">' . esc_html($company_name) . '</span>
                 </div>
                 <div class="field-row">
-                    <span class="field-label">Signature:</span> <span class="field-line"><img class="sig-img" src="' . esc_attr($signature_data) . '" /></span>
+                    <span class="field-label">Signature:</span> <span class="field-line">' . 
+                    ($signature_type === 'type' 
+                        ? '<span style="font-family: \'Times New Roman\', Times, serif; font-style: italic; font-size: 16px;">' . esc_html($signature_data) . '</span>' 
+                        : '<img class="sig-img" src="' . esc_attr($signature_data) . '" />') . 
+                    '</span>
                 </div>
                 <div class="field-row">
                     <span class="field-label">Date:</span> <span class="field-line">' . esc_html($signed_date) . '</span>

@@ -10,6 +10,10 @@ final class Admin
 		add_action('init', [$this, 'register_cpts']);
 		add_action('pre_get_posts', [$this, 'filter_projects_by_listing_status']);
 		add_action('add_meta_boxes', [$this, 'add_deal_entry_meta_boxes']);
+		add_action('admin_post_rpa_export_ca_signers', [$this, 'export_ca_signers']);
+
+		add_filter('manage_deal_entry_posts_columns', [$this, 'set_deal_entry_columns']);
+		add_action('manage_deal_entry_posts_custom_column', [$this, 'render_deal_entry_column'], 10, 2);
 	}
 
 	public function add_deal_entry_meta_boxes(): void
@@ -34,6 +38,7 @@ final class Admin
 		$phone = get_post_meta($post->ID, 'rpa_phone_number', true);
 		$date = get_post_meta($post->ID, 'rpa_signed_date', true);
 		$signature = get_post_meta($post->ID, 'rpa_signature_data', true);
+		$signature_type = get_post_meta($post->ID, 'rpa_signature_type', true) ?: 'draw';
 		$token = get_post_meta($post->ID, 'rpa_magic_token', true);
 
 		echo '<table class="form-table">';
@@ -55,19 +60,60 @@ final class Admin
 		}
 		echo '</div>';
 		echo '</td></tr>';
+		echo '<tr><th>' . esc_html__('Export CA Signers', 'rpa-listings') . '</th><td>';
+		echo '<a href="' . esc_url(admin_url('admin-post.php?action=rpa_export_ca_signers&project_id=' . $project_id)) . '" class="button button-primary">' . esc_html__('Export All Signers for this Property (CSV)', 'rpa-listings') . '</a>';
+		echo '</td></tr>';
 		echo '<tr><th>' . esc_html__('Signature', 'rpa-listings') . '</th><td>';
 		if ($signature) {
-			echo '<div style="display: flex; align-items: flex-end; gap: 10px;">';
-			echo '<img src="' . esc_attr($signature) . '" style="max-width:300px; border:1px solid #ccc; background:#fff;" />';
-			echo '<a href="' . esc_attr($signature) . '" download="signature-' . esc_attr(sanitize_title($first_name . '-' . $last_name)) . '.png" class="button button-secondary" title="' . esc_attr__('Download Signature', 'rpa-listings') . '" style="display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; padding: 0;">';
-			echo '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>';
-			echo '</a>';
-			echo '</div>';
+			if ($signature_type === 'type') {
+				echo '<div style="padding: 10px 15px; border: 1px solid #ccc; background: #fff; display: inline-block; font-family: \'Times New Roman\', Times, serif; font-style: italic; font-size: 18px; color: #000;">' . esc_html($signature) . '</div>';
+			} else {
+				echo '<div style="display: flex; align-items: flex-end; gap: 10px;">';
+				echo '<img src="' . esc_attr($signature) . '" style="max-width:300px; border:1px solid #ccc; background:#fff;" />';
+				echo '<a href="' . esc_attr($signature) . '" download="signature-' . esc_attr(sanitize_title($first_name . '-' . $last_name)) . '.png" class="button button-secondary" title="' . esc_attr__('Download Signature', 'rpa-listings') . '" style="display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; padding: 0;">';
+				echo '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>';
+				echo '</a>';
+				echo '</div>';
+			}
 		} else {
 			echo 'No signature found.';
 		}
 		echo '</td></tr>';
 		echo '</table>';
+	}
+
+	public function set_deal_entry_columns(array $columns): array
+	{
+		$new_columns = [];
+		foreach ($columns as $key => $value) {
+			$new_columns[$key] = $value;
+			if ($key === 'title') {
+				$new_columns['project'] = esc_html__('Project', 'rpa-listings');
+			}
+		}
+		$new_columns['export'] = esc_html__('Export', 'rpa-listings');
+		return $new_columns;
+	}
+
+	public function render_deal_entry_column(string $column, int $post_id): void
+	{
+		if ($column === 'project') {
+			$project_id = get_post_meta($post_id, 'rpa_project_id', true);
+			if ($project_id) {
+				echo '<a href="' . esc_url(get_edit_post_link($project_id)) . '">' . esc_html(get_the_title($project_id)) . '</a>';
+			} else {
+				echo '—';
+			}
+		}
+
+		if ($column === 'export') {
+			$project_id = get_post_meta($post_id, 'rpa_project_id', true);
+			if ($project_id) {
+				echo '<a href="' . esc_url(admin_url('admin-post.php?action=rpa_export_ca_signers&project_id=' . $project_id)) . '" class="button button-small">' . esc_html__('CSV', 'rpa-listings') . '</a>';
+			} else {
+				echo '—';
+			}
+		}
 	}
 
 	public function register_cpts(): void
@@ -237,5 +283,76 @@ final class Admin
 		wp_localize_script('rpa-listings-admin', 'rpaListingsAdmin', [
 			'nonce' => wp_create_nonce('rpa_listings_admin'),
 		]);
+	}
+
+	public function export_ca_signers(): void
+	{
+		if (!current_user_can('edit_posts')) {
+			wp_die('Unauthorized');
+		}
+
+		$project_id = intval($_GET['project_id'] ?? 0);
+		if (!$project_id) {
+			wp_die('Invalid Project ID');
+		}
+
+		$property_name = get_the_title($project_id);
+
+		$args = [
+			'post_type' => 'deal_entry',
+			'post_status' => 'publish', // Exclude soft-deleted/incomplete records (trash/drafts)
+			'posts_per_page' => -1,
+			'meta_query' => [
+				[
+					'key' => 'rpa_project_id',
+					'value' => $project_id,
+					'compare' => '='
+				]
+			]
+		];
+
+		$query = new \WP_Query($args);
+
+		$filename = 'ca_signers_' . sanitize_title($property_name) . '_' . date('Y-m-d') . '.csv';
+
+		header('Content-Type: text/csv; charset=utf-8');
+		header('Content-Disposition: attachment; filename="' . $filename . '"');
+
+		$output = fopen('php://output', 'w');
+
+		// Header row
+		fputcsv($output, ['Name', 'Company', 'Email', 'Phone', 'Signature Type', 'Signature Value', 'Date Signed', 'Property']);
+
+		foreach ($query->posts as $post) {
+			$first_name = get_post_meta($post->ID, 'rpa_first_name', true);
+			$last_name = get_post_meta($post->ID, 'rpa_last_name', true);
+			$company = get_post_meta($post->ID, 'rpa_company_name', true);
+			$email = get_post_meta($post->ID, 'rpa_email', true);
+			$phone = get_post_meta($post->ID, 'rpa_phone_number', true);
+			$date = get_post_meta($post->ID, 'rpa_signed_date', true);
+			$signature_type = get_post_meta($post->ID, 'rpa_signature_type', true) ?: 'draw';
+			$signature_data = get_post_meta($post->ID, 'rpa_signature_data', true);
+			
+			// For drawn signatures, output a placeholder instead of massive base64 strings
+			if ($signature_type === 'draw') {
+				$sig_val = '[Drawn Signature - Base64 Data stored in DB]';
+			} else {
+				$sig_val = $signature_data;
+			}
+
+			fputcsv($output, [
+				trim($first_name . ' ' . $last_name),
+				$company,
+				$email,
+				$phone,
+				$signature_type,
+				$sig_val,
+				$date,
+				$property_name
+			]);
+		}
+
+		fclose($output);
+		exit;
 	}
 }

@@ -54,6 +54,15 @@ final class ProjectMetabox
 			'normal',
 			'high'
 		);
+
+		add_meta_box(
+			'rpa-project-ca-export',
+			esc_html__('Export CA Signers', 'rpa-listings'),
+			[$this, 'render_ca_export'],
+			'project',
+			'side',
+			'high'
+		);
 	}
 
 	public function render(\WP_Post $post, array $box = []): void
@@ -194,8 +203,17 @@ final class ProjectMetabox
 		echo '</div>';
 	}
 
+	public function render_ca_export(\WP_Post $post, array $box = []): void
+	{
+		echo '<div class="rpa-project-meta" style="text-align: center; padding: 10px 0;">';
+		// echo '<p>' . esc_html__('Download a CSV of all signed Confidentiality Agreements for this property.', 'rpa-listings') . '</p>';
+		echo '<a href="' . esc_url(admin_url('admin-post.php?action=rpa_export_ca_signers&project_id=' . $post->ID)) . '" class="button button-primary" style="width: 100%; text-align: center;">' . esc_html__('Export CA Signers (CSV)', 'rpa-listings') . '</a>';
+		echo '</div>';
+	}
+
 	public function render_sold_info(\WP_Post $post, array $box = []): void
 	{
+		echo '<div class="rpa-project-meta">';
 		$sold_summary = get_post_meta($post->ID, self::META_SOLD_SUMMARY, true);
 
 		// Pull existing property data for auto-populate

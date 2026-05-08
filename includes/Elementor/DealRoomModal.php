@@ -77,13 +77,31 @@ class DealRoomModal
                                 <input type="email" name="email" required class="rpa-ca-field-input">
                             </div>
 
+                            <div class="rpa-ca-field-row">
+                                <label>Phone:</label>
+                                <input type="tel" name="phone" required class="rpa-ca-field-input">
+                            </div>
+
                             <div class="rpa-ca-field-row rpa-ca-signature-row">
-                                <label>Signature:</label>
-                                <div class="rpa-ca-sig-wrap">
+                                <label style="display: block; margin-bottom: 5px;">Signature:</label>
+                                <div class="rpa-ca-sig-mode-toggle" style="margin-bottom: 10px;">
+                                    <label style="margin-right: 15px; cursor: pointer; font-weight: normal;">
+                                        <input type="radio" name="signature_type" value="type" checked> Type
+                                    </label>
+                                    <label style="cursor: pointer; font-weight: normal;">
+                                        <input type="radio" name="signature_type" value="draw"> Signature
+                                    </label>
+                                </div>
+                                
+                                <div class="rpa-ca-sig-type-wrap">
+                                    <input type="text" id="rpaSignatureTextInput" class="rpa-ca-field-input" placeholder="Type your full name here" required>
+                                </div>
+
+                                <div class="rpa-ca-sig-wrap" style="display: none;">
                                     <canvas id="rpaSignatureCanvas" width="400" height="60"></canvas>
                                     <button type="button" class="rpa-clear-sig" onclick="clearSignature()">Clear</button>
                                 </div>
-                                <input type="hidden" name="signature_data" id="rpaSignatureData" required>
+                                <input type="hidden" name="signature_data" id="rpaSignatureData">
                             </div>
 
                             <div class="rpa-ca-field-row">
