@@ -37,7 +37,9 @@ jQuery(document).ready(function($) {
         }
 
         $('#rpaDealRoomModal').fadeIn(300);
-        resizeCanvas();
+        if (typeof resizeCanvas === 'function') {
+            resizeCanvas();
+        }
     };
 
     window.closeDealRoomModal = function() {
@@ -131,8 +133,10 @@ jQuery(document).ready(function($) {
         }
 
         if (sigType === 'draw') {
-            var signatureData = signaturePad.toDataURL();
-            $('#rpaSignatureData').val(signatureData);
+            if (signaturePad) {
+                var signatureData = signaturePad.toDataURL();
+                $('#rpaSignatureData').val(signatureData);
+            }
         } else {
             $('#rpaSignatureData').val($('#rpaSignatureTextInput').val().trim());
         }
@@ -140,9 +144,10 @@ jQuery(document).ready(function($) {
         // Use FormData instead of serialize() to avoid URL-encoding the large base64 signature
         var formData = new FormData(this);
 
-        var $submitBtn = $(this).find('.rpa-submit-btn');
-        var $msg = $(this).find('.rpa-form-msg');
-        var $fieldsContainer = $(this).find('.rpa-form-fields-container');
+        var $form = $(this);
+        var $submitBtn = $form.find('.rpa-submit-btn');
+        var $msg = $form.find('.rpa-form-msg');
+        var $fieldsContainer = $form.find('.rpa-form-fields-container');
 
         $submitBtn.prop('disabled', true).text('Submitting...');
         $msg.text('').removeClass('error success');
@@ -164,7 +169,7 @@ jQuery(document).ready(function($) {
                     }
 
                     $fieldsContainer.hide();
-                    $('.rpa-ca-doc-body, .rpa-ca-agree-text, .rpa-ca-doc-title, .rpa-ca-logo-header, .rpa-ca-scrollable-text, .rpa-ca-text, .rpa-ca-title').hide();
+                    $form.closest('.rpa-modal-content').find('.rpa-ca-doc-body, .rpa-ca-agree-text, .rpa-ca-doc-title, .rpa-ca-logo-header, .rpa-ca-scrollable-text, .rpa-ca-text, .rpa-ca-title').hide();
 
                     var successHtml = '<div style="text-align: center; padding: 40px 30px;">' +
                         '<div style="width: 70px; height: 70px; border-radius: 50%; background: linear-gradient(135deg, #c09e6c, #d4b88a); margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(192, 158, 108, 0.4);">' +
@@ -176,11 +181,9 @@ jQuery(document).ready(function($) {
                     '</div>';
                     $msg.html(successHtml);
 
-                    // Reload the page with a cache-buster to bypass both browser and server cache
+                    // Safely reload the page without appending cache-busting query strings that break Elementor CSS
                     setTimeout(function() {
-                        var url = new URL(window.location.href);
-                        url.searchParams.set('rpa_refresh', Date.now());
-                        window.location.href = url.toString();
+                        window.location.reload();
                     }, 1500);
 
                 } else {
@@ -209,20 +212,27 @@ jQuery(document).ready(function($) {
     if ($docManager.length) {
         var projectId = $docManager.data('project-id');
 
-        // Self-healing: If page is blurred but access cookie exists, force a cache-busting reload.
-        if ($docManager.hasClass('rpa-blurred-manager')) {
-            var cookieName = 'rpa_deal_access_' + projectId;
-            if (document.cookie.split(';').some((item) => item.trim().startsWith(cookieName + '='))) {
-                console.log('RPA: Access cookie found on blurred page. Forcing refresh...');
-                var url = new URL(window.location.href);
-                url.searchParams.set('rpa_refresh', Date.now());
-                window.location.replace(url.toString());
-                return;
+        // Self-healing: If any section is blurred but access cookie exists, force a cache-busting reload.
+        $('.rpa-blurred-manager').each(function() {
+            var $blurWrap = $(this);
+            var blurPid = $blurWrap.data('project-id');
+            if (blurPid) {
+                var cookieName = 'rpa_deal_access_' + blurPid;
+                if (document.cookie.split(';').some((item) => item.trim().startsWith(cookieName + '='))) {
+                    console.log('RPA: Access cookie found for pid ' + blurPid + '. Forcing refresh...');
+                    var url = new URL(window.location.href);
+                    url.searchParams.set('rpa_refresh', Date.now());
+                    window.location.replace(url.toString());
+                    return false; // break each
+                }
             }
-        }
+        });
         var docs = $docManager.data('docs') || [];
         if (typeof docs === 'string') {
             try { docs = JSON.parse(docs); } catch(e) { docs = []; }
+        }
+        if (!Array.isArray(docs)) {
+            docs = (typeof docs === 'object' && docs !== null) ? Object.values(docs) : [];
         }
 
         var currentPath = [];
@@ -266,22 +276,53 @@ jQuery(document).ready(function($) {
                 $grid.removeClass('list-view');
             }
             
-            var currentItems = docs;
+            // Recursive function to ensure all document levels are arrays
+            function ensureArray(data) {
+                if (!Array.isArray(data)) {
+                    if (typeof data === 'object' && data !== null) {
+                        data = Object.values(data);
+                    } else {
+                        data = [];
+                    }
+                }
+                data.forEach(item => {
+                    if (item && item.type === 'folder' && item.children) {
+                        item.children = ensureArray(item.children);
+                    }
+                });
+                return data;
+            }
+
+            var currentItems = ensureArray(docs);
             for (var i = 0; i < currentPath.length; i++) {
                 var pathIdx = currentPath[i];
-                if (currentItems[pathIdx]) {
-                    currentItems = currentItems[pathIdx].children || [];
+                if (currentItems[pathIdx] && currentItems[pathIdx].children) {
+                    currentItems = currentItems[pathIdx].children;
+                } else {
+                    currentItems = [];
+                    break;
                 }
+            }
+
+            // Final safety check for currentItems
+            if (!Array.isArray(currentItems)) {
+                currentItems = [];
             }
 
             // Sorting
             var sortVal = $('#rpa-frontend-sort').val();
-            currentItems.sort(function(a, b) {
-                if (sortVal === 'name') {
-                    return a.name.localeCompare(b.name);
-                }
-                return 0; // default/date if not implemented
-            });
+            try {
+                currentItems.sort(function(a, b) {
+                    if (sortVal === 'name') {
+                        var nameA = (a && a.name) ? String(a.name) : '';
+                        var nameB = (b && b.name) ? String(b.name) : '';
+                        return nameA.localeCompare(nameB);
+                    }
+                    return 0;
+                });
+            } catch (sortError) {
+                console.error("RPA: Sorting failed", sortError);
+            }
 
             if (currentItems.length === 0) {
                 $grid.html('<p style="padding: 20px; color: #666;">No items found.</p>');

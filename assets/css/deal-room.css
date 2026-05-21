@@ -336,8 +336,8 @@
 
 .rpa-doc-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap: 24px;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 16px;
 }
 
 /* List View Styles */
@@ -486,7 +486,7 @@
 
 .rpa-doc-item-top {
     background: rgba(26, 47, 85, 0.05);
-    height: 140px;
+    height: 90px;
     position: relative;
     display: flex;
     align-items: center;
@@ -536,7 +536,7 @@
 }
 
 .rpa-doc-item-bottom {
-    padding: 16px;
+    padding: 12px;
     background: transparent;
     border-top: 1px solid rgba(26, 47, 85, 0.1);
 }

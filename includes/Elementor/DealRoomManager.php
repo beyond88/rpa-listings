@@ -23,7 +23,7 @@ class DealRoomManager extends Widget_Base
 
     public function get_icon()
     {
-        return 'eicon-folder-o';
+        return 'tp-icon';
     }
 
     public function get_categories()
@@ -56,6 +56,77 @@ class DealRoomManager extends Widget_Base
             ]
         );
 
+        $this->add_control(
+            'blur_heading',
+            [
+                'label' => esc_html__('Heading', 'rpa-listings'),
+                'type' => Controls_Manager::TEXT,
+                'default' => esc_html__('UNLOCK FULL DEAL ROOM ACCESS', 'rpa-listings'),
+                'description' => esc_html__('Heading shown above the blur area.', 'rpa-listings'),
+            ]
+        );
+
+        $this->add_control(
+            'blur_description',
+            [
+                'label' => esc_html__('Short Description', 'rpa-listings'),
+                'type' => Controls_Manager::WYSIWYG,
+                'default' => esc_html__('To view the complete listing documents, financials, and supporting materials, please click the "Deal Room Access" button below and complete the Confidentiality Agreement. Once the CA is signed, you\'ll be granted access to the full deal room.', 'rpa-listings'),
+                'description' => esc_html__('Description shown above the blur area.', 'rpa-listings'),
+            ]
+        );
+
+        $this->end_controls_section();
+
+        // Style Section
+        $this->start_controls_section(
+            'section_style',
+            [
+                'label' => esc_html__('Typography & Colors', 'rpa-listings'),
+                'tab' => Controls_Manager::TAB_STYLE,
+            ]
+        );
+
+        $this->add_control(
+            'heading_color',
+            [
+                'label' => esc_html__('Heading Color', 'rpa-listings'),
+                'type' => Controls_Manager::COLOR,
+                'selectors' => [
+                    '{{WRAPPER}} .rpa-blur-intro-heading' => 'color: {{VALUE}};',
+                ],
+            ]
+        );
+
+        $this->add_group_control(
+            \Elementor\Group_Control_Typography::get_type(),
+            [
+                'name' => 'heading_typography',
+                'label' => esc_html__('Heading Typography', 'rpa-listings'),
+                'selector' => '{{WRAPPER}} .rpa-blur-intro-heading',
+            ]
+        );
+
+        $this->add_control(
+            'desc_color',
+            [
+                'label' => esc_html__('Description Color', 'rpa-listings'),
+                'type' => Controls_Manager::COLOR,
+                'selectors' => [
+                    '{{WRAPPER}} .rpa-blur-intro-desc' => 'color: {{VALUE}};',
+                ],
+            ]
+        );
+
+        $this->add_group_control(
+            \Elementor\Group_Control_Typography::get_type(),
+            [
+                'name' => 'desc_typography',
+                'label' => esc_html__('Description Typography', 'rpa-listings'),
+                'selector' => '{{WRAPPER}} .rpa-blur-intro-desc',
+            ]
+        );
+
         $this->end_controls_section();
     }
 
@@ -69,6 +140,17 @@ class DealRoomManager extends Widget_Base
         if ($has_access) {
             $this->render_document_manager($project_id, false, $settings['button_text']);
         } else {
+            if (!empty($settings['blur_heading']) || !empty($settings['blur_description'])) {
+                echo '<div class="rpa-blur-intro" style="text-align: center; margin-bottom: 25px;">';
+                if (!empty($settings['blur_heading'])) {
+                    echo '<h3 class="rpa-blur-intro-heading" style="margin-bottom: 15px;">' . esc_html($settings['blur_heading']) . '</h3>';
+                }
+                if (!empty($settings['blur_description'])) {
+                    echo '<div class="rpa-blur-intro-desc" style="max-width: 850px; margin: 0 auto;">' . wpautop(wp_kses_post($settings['blur_description'])) . '</div>';
+                }
+                echo '</div>';
+            }
+
             $this->render_document_manager($project_id, true, $settings['button_text']);
             DealRoomModal::render_modal($project_id);
         }
@@ -76,6 +158,7 @@ class DealRoomManager extends Widget_Base
 
     private function enrich_documents_data($items)
     {
+        $items = is_array($items) ? array_values($items) : []; // Prevent associative array conversion
         foreach ($items as &$item) {
             if (isset($item['type']) && $item['type'] === 'folder' && isset($item['children'])) {
                 $item['children'] = $this->enrich_documents_data($item['children']);
@@ -118,6 +201,7 @@ class DealRoomManager extends Widget_Base
             // Parse and enrich documents with file size and date if missing
             $docs = json_decode($documents_json, true);
             if (is_array($docs)) {
+                $docs = array_values($docs); // Prevent associative array conversion to JSON Object
                 $docs = $this->enrich_documents_data($docs);
                 $documents_json = wp_json_encode($docs);
             }

@@ -23,7 +23,7 @@ class DealRoomAccess extends Widget_Base
 
     public function get_icon()
     {
-        return 'eicon-lock-user';
+        return 'tp-icon';
     }
 
     public function get_categories()

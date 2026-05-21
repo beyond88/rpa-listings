@@ -148,8 +148,11 @@ class DealHandler
         // Generate PDF
         $pdf_path = $this->generate_pdf($entry_id, $project_id, $first_name, $last_name, $company_name, $signature_data, $signed_date, $signature_type);
 
-        // Send Email
+        // Send Email to user
         $this->send_email_with_magic_link($email, $project_id, $magic_token, $pdf_path);
+
+        // Send admin notification
+        $this->send_admin_notification($project_id, $first_name, $last_name, $company_name, $email, $phone, $signed_date, $pdf_path);
 
         // Set cookie directly in response if possible, but AJAX can't easily set reliable frontend cookies sometimes.
         // It's better to pass token back and let JS set cookie, or set cookie header.
@@ -423,6 +426,180 @@ class DealHandler
         remove_filter('wp_mail_content_type', function() { return 'text/html'; }, 999);
     }
 
+    private function send_admin_notification($project_id, $first_name, $last_name, $company_name, $user_email, $phone, $signed_date, $pdf_path)
+    {
+        $notify_email = ['Kim.Brothers@cushwake.com', 'Devin.Beasley@cushwake.com'];
+        $property_name = get_the_title($project_id);
+        $site_name     = wp_specialchars_decode(get_option('blogname'), ENT_QUOTES);
+        $admin_email   = get_option('admin_email');
+        $current_year  = gmdate('Y');
+        $full_name     = trim($first_name . ' ' . $last_name);
+
+        // Format signed date for display
+        $display_date = $signed_date;
+        $time = strtotime($signed_date);
+        if ($time) {
+            $display_date = date('F j, Y', $time);
+        }
+
+        $subject = 'New CA Submission – ' . $full_name . ' – ' . $property_name;
+
+        $message = '<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>' . esc_html($subject) . '</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f4f4f0;font-family:\'Georgia\',\'Times New Roman\',serif;">
+
+  <!-- Preheader -->
+  <div style="display:none;max-height:0;overflow:hidden;mso-hide:all;">
+    New Confidentiality Agreement submission from ' . esc_html($full_name) . ' for ' . esc_html($property_name) . '.
+  </div>
+
+  <!-- Wrapper -->
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#f4f4f0;">
+    <tr>
+      <td align="center" style="padding:40px 16px;">
+
+        <!-- Card -->
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:620px;background-color:#ffffff;border-radius:4px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+
+          <!-- Header -->
+          <tr>
+            <td style="background-color:#1a1a1a;padding:40px 48px 36px;text-align:center;">
+              <p style="margin:0 0 6px 0;font-family:\'Georgia\',serif;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#C9A96E;">Recreational Property Advisors</p>
+              <h1 style="margin:0;font-family:\'Georgia\',serif;font-size:22px;font-weight:400;color:#ffffff;letter-spacing:1px;line-height:1.4;">New CA Form Submission</h1>
+              <div style="width:40px;height:2px;background-color:#C9A96E;margin:18px auto 0;"></div>
+            </td>
+          </tr>
+
+          <!-- Gold accent bar -->
+          <tr>
+            <td style="background-color:#C9A96E;height:4px;font-size:0;line-height:0;">&nbsp;</td>
+          </tr>
+
+          <!-- Body -->
+          <tr>
+            <td style="padding:44px 48px 36px;">
+
+              <p style="margin:0 0 22px 0;font-family:\'Arial\',sans-serif;font-size:15px;color:#333333;line-height:1.7;">
+                A new Confidentiality Agreement has been submitted. Below are the details of the submission.
+              </p>
+
+              <!-- Property info box -->
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#f9f7f3;border-left:3px solid #C9A96E;border-radius:2px;margin-bottom:32px;">
+                <tr>
+                  <td style="padding:20px 24px;">
+                    <p style="margin:0 0 4px 0;font-family:\'Arial\',sans-serif;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#999999;">Property</p>
+                    <p style="margin:0 0 16px 0;font-family:\'Georgia\',serif;font-size:17px;color:#1a1a1a;font-weight:400;">' . esc_html($property_name) . '</p>
+                    <p style="margin:0 0 4px 0;font-family:\'Arial\',sans-serif;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#999999;">Agreement Signed</p>
+                    <p style="margin:0;font-family:\'Arial\',sans-serif;font-size:14px;color:#444444;">' . esc_html($display_date) . '</p>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Submitter Details -->
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom:28px;">
+                <tr>
+                  <td style="padding:16px 20px;background-color:#fafafa;border-radius:4px;">
+                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                      <tr>
+                        <td style="padding:8px 0;border-bottom:1px solid #eeeeee;">
+                          <span style="font-family:\'Arial\',sans-serif;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#999999;">Name</span><br>
+                          <span style="font-family:\'Arial\',sans-serif;font-size:15px;color:#1a1a1a;font-weight:600;">' . esc_html($full_name) . '</span>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding:8px 0;border-bottom:1px solid #eeeeee;">
+                          <span style="font-family:\'Arial\',sans-serif;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#999999;">Company</span><br>
+                          <span style="font-family:\'Arial\',sans-serif;font-size:15px;color:#1a1a1a;">' . esc_html($company_name) . '</span>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding:8px 0;border-bottom:1px solid #eeeeee;">
+                          <span style="font-family:\'Arial\',sans-serif;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#999999;">Email</span><br>
+                          <a href="mailto:' . esc_attr($user_email) . '" style="font-family:\'Arial\',sans-serif;font-size:15px;color:#C9A96E;text-decoration:none;">' . esc_html($user_email) . '</a>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding:8px 0;">
+                          <span style="font-family:\'Arial\',sans-serif;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#999999;">Phone</span><br>
+                          <span style="font-family:\'Arial\',sans-serif;font-size:15px;color:#1a1a1a;">' . esc_html($phone) . '</span>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Attachment note -->
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border-top:1px solid #eeeeee;padding-top:28px;">
+                <tr>
+                  <td width="36" valign="top" style="padding-top:2px;">
+                    <div style="width:32px;height:32px;background-color:#f4f4f0;border-radius:50%;text-align:center;line-height:32px;">
+                      <span style="font-size:16px;">📎</span>
+                    </div>
+                  </td>
+                  <td style="padding-left:12px;">
+                    <p style="margin:0 0 4px 0;font-family:\'Arial\',sans-serif;font-size:13px;font-weight:600;color:#1a1a1a;">Signed Agreement Attached</p>
+                    <p style="margin:0;font-family:\'Arial\',sans-serif;font-size:13px;color:#777777;line-height:1.6;">The signed Confidentiality Agreement PDF is attached for your records.</p>
+                  </td>
+                </tr>
+              </table>
+
+            </td>
+          </tr>
+
+          <!-- Divider -->
+          <tr>
+            <td style="padding:0 48px;">
+              <div style="border-top:1px solid #eeeeee;"></div>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding:28px 48px 36px;text-align:center;">
+              <p style="margin:0 0 8px 0;font-family:\'Arial\',sans-serif;font-size:12px;color:#aaaaaa;line-height:1.7;">
+                This is an automated notification from <strong style="color:#888888;">' . esc_html($site_name) . '</strong>.
+              </p>
+              <p style="margin:16px 0 0 0;font-family:\'Arial\',sans-serif;font-size:11px;color:#cccccc;">&copy; ' . $current_year . ' ' . esc_html($site_name) . '. All rights reserved.</p>
+            </td>
+          </tr>
+
+        </table>
+        <!-- /Card -->
+
+      </td>
+    </tr>
+  </table>
+
+</body>
+</html>';
+
+        $headers = [
+            'Reply-To: ' . $admin_email,
+        ];
+
+        $clean_site_name = str_replace(['"', "'", '<', '>'], '', $site_name);
+        $from_name_filter = function() use ($clean_site_name) { return $clean_site_name; };
+        $from_email_filter = function() use ($admin_email) { return $admin_email; };
+
+        add_filter('wp_mail_from_name', $from_name_filter, 999);
+        add_filter('wp_mail_from', $from_email_filter, 999);
+        add_filter('wp_mail_content_type', function() { return 'text/html'; }, 999);
+
+        $attachments = ($pdf_path && file_exists($pdf_path)) ? [$pdf_path] : [];
+
+        wp_mail($notify_email, $subject, $message, $headers, $attachments);
+
+        remove_filter('wp_mail_from_name', $from_name_filter, 999);
+        remove_filter('wp_mail_from', $from_email_filter, 999);
+        remove_filter('wp_mail_content_type', function() { return 'text/html'; }, 999);
+    }
+
     public function handle_magic_link()
     {
         $has_token = isset($_GET['deal_token']);
@@ -575,6 +752,13 @@ class DealHandler
 
         $project_id = get_the_ID();
         if (self::has_access($project_id)) {
+            // Clear Elementor's built-in element cache for this document.
+            // Elementor 4.x caches widget HTML output per-document. Since our widgets
+            // render different content based on per-user cookie state, the cached
+            // (blurred) HTML from an anonymous visitor must not be served to
+            // authenticated users. Deleting the cache forces a fresh render.
+            delete_post_meta($project_id, '_elementor_element_cache');
+
             if (!defined('DONOTCACHEPAGE')) {
                 define('DONOTCACHEPAGE', true);
             }
