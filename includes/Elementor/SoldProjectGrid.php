@@ -404,30 +404,26 @@ class SoldProjectGrid extends Widget_Base
                             while ($args->have_posts()) : $args->the_post();
                                 $post_id = get_the_ID();
                                 
-                                // Fetch data for the hover overlay
+                                // Retrieve from sold info metabox, split by lines, format each as rpa-sold-info-line
+                                $sold_summary_raw = get_post_meta($post_id, 'rpa_project_sold_summary', true);
                                 $summary_lines = [];
-                                $summary_lines[] = '<strong>Name:</strong> ' . get_the_title();
-                                
-                                $property_types = get_post_meta($post_id, 'rpa_project_property_types', true);
-                                if (is_array($property_types) && !empty($property_types)) {
-                                    $summary_lines[] = '<strong>Type:</strong> ' . implode(', ', $property_types);
-                                }
-                                
-                                $sold_nrsf = get_post_meta($post_id, 'rpa_project_sold_nrsf', true);
-                                if (!$sold_nrsf) $sold_nrsf = get_post_meta($post_id, 'total_nrsf', true);
-                                if ($sold_nrsf) {
-                                    $summary_lines[] = '<strong>NRSF:</strong> ' . $sold_nrsf;
-                                }
-                                
-                                $sold_units = get_post_meta($post_id, 'rpa_project_sold_units', true);
-                                if (!$sold_units) $sold_units = get_post_meta($post_id, 'number_of_units', true);
-                                if ($sold_units) {
-                                    $summary_lines[] = '<strong>Units:</strong> ' . $sold_units;
-                                }
-                                
-                                $sold_date = get_post_meta($post_id, 'rpa_project_sold_date', true);
-                                if ($sold_date) {
-                                    $summary_lines[] = '<strong>Date Sold:</strong> ' . $sold_date;
+
+                                if ($sold_summary_raw) {
+                                    // Normalize <br> and <p> tags into newlines, then strip remaining HTML
+                                    $normalized = str_ireplace(['<br>', '<br/>', '<br />', '</p>'], "\n", $sold_summary_raw);
+                                    $plain_text  = wp_strip_all_tags($normalized);
+                                    $lines       = array_filter(array_map('trim', explode("\n", $plain_text)));
+
+                                    foreach ($lines as $line) {
+                                        $colon_pos = strpos($line, ':');
+                                        if ($colon_pos !== false) {
+                                            $label = trim(substr($line, 0, $colon_pos));
+                                            $value = trim(substr($line, $colon_pos + 1));
+                                            $summary_lines[] = '<div class="rpa-sold-info-line"><strong>' . esc_html($label) . ':</strong> ' . esc_html($value) . '</div>';
+                                        } else {
+                                            $summary_lines[] = '<div class="rpa-sold-info-line">' . esc_html($line) . '</div>';
+                                        }
+                                    }
                                 }
                         ?>
                                 <div class="col-lg-4 col-md-6">
@@ -440,10 +436,13 @@ class SoldProjectGrid extends Widget_Base
                                                 echo '<img src="' . esc_url(site_url('/wp-includes/images/media/default.png')) . '" class="img-responsive" alt="">';
                                             }
                                             ?>
+                                            <div class="rpa-sold-name-overlay">
+                                                <h3 class="rpa-sold-name-title"><?php echo esc_html(get_the_title()); ?></h3>
+                                            </div>
                                             <div class="rpa-sold-overlay">
                                                 <div class="rpa-sold-summary-content">
                                                     <?php foreach ($summary_lines as $line) : ?>
-                                                        <div class="rpa-sold-info-line"><?php echo $line; ?></div>
+                                                        <?php echo $line; ?>
                                                     <?php endforeach; ?>
                                                 </div>
                                             </div>
@@ -505,6 +504,36 @@ class SoldProjectGrid extends Widget_Base
             /* Image Zoom */
             .rpa-sold-project-item.rpa-has-zoom:hover .project-thumb img {
                 transform: scale(1.15);
+            }
+
+            /* Default overlay: always visible dark background + property name */
+            .rpa-sold-name-overlay {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.45);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 1;
+                transition: opacity 0.5s ease;
+                padding: 20px;
+            }
+
+            .rpa-sold-project-item:hover .rpa-sold-name-overlay {
+                opacity: 0;
+            }
+
+            .rpa-sold-name-title {
+                color: #fff;
+                font-size: 22px;
+                font-weight: 700;
+                text-align: center;
+                margin: 0;
+                line-height: 1.3;
+                text-shadow: 0 2px 10px rgba(0, 0, 0, 0.6);
             }
 
             .rpa-sold-overlay {

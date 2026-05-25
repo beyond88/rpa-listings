@@ -25,6 +25,7 @@ class ElementorInit
         require_once __DIR__ . '/ProjectDirection.php';
         require_once __DIR__ . '/Features.php';
         require_once __DIR__ . '/RPAFeatures.php';
+        require_once __DIR__ . '/PointsOfInterestMap.php';
 
         // Unregister core widgets and replace with RPA versions
         $widgets_manager->unregister('tp-project-title');
@@ -45,5 +46,6 @@ class ElementorInit
         $widgets_manager->register(new PropertyAmenities());
         $widgets_manager->register(new ProjectGallery());
         $widgets_manager->register(new ProjectDirection());
+        $widgets_manager->register(new PointsOfInterestMap());
     }
 }

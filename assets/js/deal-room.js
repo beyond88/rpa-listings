@@ -558,45 +558,40 @@ jQuery(document).ready(function($) {
 
             var $btn = $(this);
             var originalText = $btn.text();
-            $btn.prop('disabled', true).text('Preparing ZIP...');
 
-            $.ajax({
-                url: rpaDealRoom.ajax_url,
-                type: 'POST',
-                data: {
-                    action: 'rpa_download_deal_docs',
-                    project_id: projectId,
-                    security: rpaDealRoom.nonce,
-                    file_ids: selectedItems
-                },
-                success: function(res) {
-                    if (res.success && res.data.zip_url) {
-                        var a = document.createElement('a');
-                        a.href = res.data.zip_url;
-                        a.target = '_blank'; // Fallback for cross-origin or unsupported download attr
-                        // Extract filename from URL
-                        var filename = res.data.zip_url.substring(res.data.zip_url.lastIndexOf('/') + 1);
-                        a.download = filename || 'download';
-                        document.body.appendChild(a);
-                        a.click();
-                        document.body.removeChild(a);
-                        
-                        $btn.text('Downloaded!');
-                        setTimeout(function() {
-                            $btn.prop('disabled', false).text(originalText);
-                            selectedItems = [];
-                            renderDocs();
-                        }, 2000);
-                    } else {
-                        // Removed alert
-                        $btn.prop('disabled', false).text(originalText);
-                    }
-                },
-                error: function() {
-                    // Removed alert
+            // Native browser download via window.location — browser handles
+            // Content-Disposition:attachment directly, no new tab, no page navigation.
+            function triggerNativeDownload(url) {
+                window.location.href = url;
+            }
+
+            if (selectedItems.length === 1) {
+                var dlUrl = rpaDealRoom.site_url + '?rpa_dl=1&pid=' + encodeURIComponent(projectId) + '&fid=' + encodeURIComponent(selectedItems[0]) + '&_wpnonce=' + encodeURIComponent(rpaDealRoom.dl_nonce) + '&_t=' + Date.now();
+                $btn.prop('disabled', true).text('Downloading...');
+                triggerNativeDownload(dlUrl);
+                // Browser handles the download natively — reset button quickly
+                setTimeout(function() {
                     $btn.prop('disabled', false).text(originalText);
-                }
+                    selectedItems = [];
+                    renderDocs();
+                }, 1500);
+                return;
+            }
+
+            // Multiple files: stream ZIP through the authenticated PHP endpoint
+            var params = ['rpa_dl=1', 'pid=' + encodeURIComponent(projectId), '_wpnonce=' + encodeURIComponent(rpaDealRoom.dl_nonce), '_t=' + Date.now()];
+            selectedItems.forEach(function(id) {
+                params.push('fid[]=' + encodeURIComponent(id));
             });
+            var dlUrl = rpaDealRoom.site_url + '?' + params.join('&');
+
+            $btn.prop('disabled', true).text('Preparing ZIP...');
+            triggerNativeDownload(dlUrl);
+            setTimeout(function() {
+                $btn.prop('disabled', false).text(originalText);
+                selectedItems = [];
+                renderDocs();
+            }, 2000);
         });
 
         renderDocs();

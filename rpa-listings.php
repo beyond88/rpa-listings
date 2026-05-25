@@ -12,7 +12,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('RPA_LISTINGS_VERSION', '0.1.3');
+define('RPA_LISTINGS_VERSION', '0.2.1');
 define('RPA_LISTINGS_FILE', __FILE__);
 define('RPA_LISTINGS_DIR', plugin_dir_path(__FILE__));
 define('RPA_LISTINGS_URL', plugin_dir_url(__FILE__));

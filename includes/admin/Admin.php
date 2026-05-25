@@ -14,6 +14,9 @@ final class Admin
 
 		add_filter('manage_deal_entry_posts_columns', [$this, 'set_deal_entry_columns']);
 		add_action('manage_deal_entry_posts_custom_column', [$this, 'render_deal_entry_column'], 10, 2);
+
+		add_filter('manage_project_posts_columns', [$this, 'set_project_columns']);
+		add_action('manage_project_posts_custom_column', [$this, 'render_project_column'], 10, 2);
 	}
 
 	public function add_deal_entry_meta_boxes(): void
@@ -116,6 +119,39 @@ final class Admin
 		}
 	}
 
+	public function set_project_columns(array $columns): array
+	{
+		$new_columns = [];
+		foreach ($columns as $key => $value) {
+			$new_columns[$key] = $value;
+			if ($key === 'title') {
+				$new_columns['listing_status'] = esc_html__('Listing Status', 'rpa-listings');
+			}
+		}
+		return $new_columns;
+	}
+
+	public function render_project_column(string $column, int $post_id): void
+	{
+		if ($column !== 'listing_status') {
+			return;
+		}
+
+		$status = get_post_meta($post_id, 'rpa_project_listing_status', true) ?: 'active';
+
+		$labels = [
+			'active'  => ['label' => 'Active',         'color' => '#16a34a', 'bg' => '#dcfce7'],
+			'sold'    => ['label' => 'Sold',            'color' => '#dc2626', 'bg' => '#fee2e2'],
+			'private' => ['label' => 'Private (Off-Market)', 'color' => '#b45309', 'bg' => '#fef3c7'],
+		];
+
+		$badge = $labels[$status] ?? ['label' => ucfirst($status), 'color' => '#6b7280', 'bg' => '#f3f4f6'];
+
+		echo '<span style="display:inline-block; padding:2px 10px; border-radius:12px; font-size:12px; font-weight:600; color:' . esc_attr($badge['color']) . '; background:' . esc_attr($badge['bg']) . ';">'
+			. esc_html($badge['label'])
+			. '</span>';
+	}
+
 	public function register_cpts(): void
 	{
 		$labels = [
@@ -176,8 +212,8 @@ final class Admin
 			'relation' => 'OR',
 			[
 				'key'     => 'rpa_project_listing_status',
-				'value'   => 'sold',
-				'compare' => '!=',
+				'value'   => ['sold', 'private'],
+				'compare' => 'NOT IN',
 			],
 			[
 				'key'     => 'rpa_project_listing_status',

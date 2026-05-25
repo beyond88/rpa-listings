@@ -31,6 +31,7 @@ final class ProjectMetabox
 	private const META_360_VIDEO_GALLERY = 'rpa_project_360_video_gallery';
 	private const META_PHOTO_GALLERY_JSON = 'rpa_project_photo_gallery_json';
 	private const META_INVESTMENT_HIGHLIGHTS = 'rpa_project_investment_highlights';
+	private const META_MAP_URL               = 'rpa_project_map_url';
 
 	public function register(): void
 	{
@@ -72,6 +73,15 @@ final class ProjectMetabox
 			'rpa-project-investment-highlights',
 			esc_html__('Investment Highlights', 'rpa-listings'),
 			[$this, 'render_investment_highlights'],
+			'project',
+			'normal',
+			'high'
+		);
+
+		add_meta_box(
+			'rpa-project-map-url',
+			esc_html__('Points of Interest Map', 'rpa-listings'),
+			[$this, 'render_map_url'],
 			'project',
 			'normal',
 			'high'
@@ -280,6 +290,7 @@ final class ProjectMetabox
 		echo '<select id="rpa_project_listing_status" name="rpa_project_listing_status">';
 		echo '<option value="active"' . selected($listing_status, 'active', false) . '>Active</option>';
 		echo '<option value="sold"' . selected($listing_status, 'sold', false) . '>Sold</option>';
+		echo '<option value="private"' . selected($listing_status, 'private', false) . '>Private (Off-Market)</option>';
 		echo '</select>';
 		echo '</div>';
 
@@ -371,6 +382,21 @@ final class ProjectMetabox
 		echo '</div>';
 	}
 
+
+	public function render_map_url(\WP_Post $post, array $box = []): void
+	{
+		$map_url = (string) get_post_meta($post->ID, self::META_MAP_URL, true);
+
+		echo '<div class="rpa-project-meta">';
+		echo '<p style="color:#646970; font-size:13px; margin-bottom:12px;">'
+			. esc_html__('Paste the iframe src URL from the Points of Interest map. Leave empty to hide the section on the frontend.', 'rpa-listings')
+			. '</p>';
+		echo '<div class="rpa-row">';
+		echo '<label class="rpa-label" for="rpa_project_map_url">' . esc_html__('Map iframe src URL', 'rpa-listings') . '</label>';
+		echo '<input type="url" id="rpa_project_map_url" name="rpa_project_map_url" value="' . esc_attr($map_url) . '" class="large-text" placeholder="https://atlas.cushwake.com/map_4.html?fname=..." />';
+		echo '</div>';
+		echo '</div>';
+	}
 
 	public function render_ca_export(\WP_Post $post, array $box = []): void
 	{
@@ -561,7 +587,7 @@ final class ProjectMetabox
 		update_post_meta($post_id, self::META_STATUS, $status);
 
 		$listing_status = isset($_POST['rpa_project_listing_status']) ? sanitize_text_field((string) $_POST['rpa_project_listing_status']) : 'active';
-		if (!in_array($listing_status, ['active', 'sold'], true)) { $listing_status = 'active'; }
+		if (!in_array($listing_status, ['active', 'sold', 'private'], true)) { $listing_status = 'active'; }
 		update_post_meta($post_id, self::META_LISTING_STATUS, $listing_status);
 
 		$allowed_amenities = array_keys($this->amenity_options());
@@ -625,6 +651,9 @@ final class ProjectMetabox
 				update_post_meta($post_id, self::META_INVESTMENT_HIGHLIGHTS, $highlights_json);
 			}
 		}
+
+		$map_url = isset($_POST['rpa_project_map_url']) ? esc_url_raw(wp_unslash($_POST['rpa_project_map_url'])) : '';
+		update_post_meta($post_id, self::META_MAP_URL, $map_url);
 	}
 
 	private function property_type_options(): array

@@ -19,9 +19,212 @@ class DealHandler
         add_action('wp_ajax_nopriv_rpa_download_deal_docs', [$this, 'handle_download_docs']);
         add_action('wp_ajax_rpa_resend_magic_link', [$this, 'handle_resend_magic_link']);
         add_action('template_redirect', [$this, 'handle_magic_link']);
+        add_action('template_redirect', [$this, 'handle_file_stream']);
         add_action('template_redirect', [$this, 'prevent_caching_if_authenticated']);
         add_action('wp_enqueue_scripts', [$this, 'enqueue_assets']);
         add_action('before_delete_post', [$this, 'clear_deal_access_transient']);
+        add_filter('upload_mimes', [$this, 'allow_excel_upload']);
+    }
+
+    public function allow_excel_upload($mimes)
+    {
+        $mimes['xlsx'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+        $mimes['xls']  = 'application/vnd.ms-excel';
+        return $mimes;
+    }
+
+    public function handle_file_stream()
+    {
+        if (empty($_GET['rpa_dl'])) {
+            return;
+        }
+
+        // Prevent any proxy, CDN, or page-cache plugin from caching download responses
+        nocache_headers();
+        header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+        header('Pragma: no-cache');
+
+        $project_id = intval($_GET['pid'] ?? 0);
+        $nonce      = sanitize_text_field($_GET['_wpnonce'] ?? '');
+
+        // Support single ?fid=X or multiple ?fid[]=X&fid[]=Y
+        $raw_fid = $_GET['fid'] ?? '';
+        if (is_array($raw_fid)) {
+            $file_ids = array_values(array_filter(array_map('sanitize_text_field', $raw_fid)));
+        } else {
+            $clean = sanitize_text_field($raw_fid);
+            $file_ids = $clean !== '' ? [$clean] : [];
+        }
+
+        if (!$project_id || empty($file_ids) || !wp_verify_nonce($nonce, 'rpa_dl_' . $project_id)) {
+            status_header(403);
+            exit('Invalid request.');
+        }
+
+        if (!self::has_access($project_id)) {
+            status_header(403);
+            exit('Access denied.');
+        }
+
+        $documents_json = get_post_meta($project_id, 'rpa_project_documents', true);
+        $docs = json_decode($documents_json, true);
+
+        if (!is_array($docs)) {
+            status_header(404);
+            exit('No documents found.');
+        }
+
+        if (count($file_ids) === 1) {
+            $item = $this->find_file_by_id($docs, $file_ids[0]);
+
+            // If the selected item is a folder, ZIP its contents instead of streaming directly
+            if ($item && isset($item['type']) && $item['type'] === 'folder') {
+                $this->stream_zip_files($docs, $file_ids, $project_id);
+                return;
+            }
+
+            $file = $item;
+
+            if (!$file || empty($file['url'])) {
+                status_header(404);
+                exit('File not found.');
+            }
+
+            $upload_dir   = wp_upload_dir();
+            $local_path   = str_replace(
+                rtrim($upload_dir['baseurl'], '/'),
+                rtrim($upload_dir['basedir'], '/'),
+                $file['url']
+            );
+            $local_path   = realpath($local_path);
+            $uploads_base = realpath($upload_dir['basedir']);
+
+            if (!$local_path || !$uploads_base || strpos($local_path, $uploads_base) !== 0) {
+                status_header(403);
+                exit('File access denied.');
+            }
+
+            if (!file_exists($local_path)) {
+                status_header(404);
+                exit('File not found on server.');
+            }
+
+            $this->stream_file($local_path, $file['name'] ?? basename($local_path));
+        } else {
+            $this->stream_zip_files($docs, $file_ids, $project_id);
+        }
+    }
+
+    private function stream_zip_files($docs, $file_ids, $project_id)
+    {
+        $upload_dir = wp_upload_dir();
+        $zip_dir    = $upload_dir['basedir'] . '/rpa_deals/zips';
+        if (!file_exists($zip_dir)) {
+            wp_mkdir_p($zip_dir);
+        }
+
+        $zip_filename = 'Deal_Documents_' . $project_id . '_' . time() . '.zip';
+        $zip_path     = $zip_dir . '/' . $zip_filename;
+
+        $zip = new \ZipArchive();
+        if ($zip->open($zip_path, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
+            status_header(500);
+            exit('Failed to create archive.');
+        }
+
+        $added_urls = [];
+        $this->add_files_to_zip($zip, $docs, $file_ids, '', $added_urls);
+
+        if ($zip->numFiles === 0) {
+            $zip->close();
+            @unlink($zip_path);
+            status_header(404);
+            exit('No files found to download.');
+        }
+
+        $zip->close();
+
+        // Delete the temp ZIP after it has been sent
+        $cleanup_path = $zip_path;
+        register_shutdown_function(function () use ($cleanup_path) {
+            if (file_exists($cleanup_path)) {
+                @unlink($cleanup_path);
+            }
+        });
+
+        $this->stream_file($zip_path, $zip_filename);
+    }
+
+    private function stream_file($local_path, $filename)
+    {
+        $ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+
+        $mime_map = [
+            'xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'xls'  => 'application/vnd.ms-excel',
+            'pdf'  => 'application/pdf',
+            'zip'  => 'application/zip',
+            'doc'  => 'application/msword',
+            'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'jpg'  => 'image/jpeg',
+            'jpeg' => 'image/jpeg',
+            'png'  => 'image/png',
+            'gif'  => 'image/gif',
+            'webp' => 'image/webp',
+            'csv'  => 'text/csv',
+            'txt'  => 'text/plain',
+        ];
+
+        $mime = $mime_map[$ext] ?? (function_exists('mime_content_type') ? mime_content_type($local_path) : 'application/octet-stream');
+
+        $safe_filename = str_replace(['"', "\r", "\n"], '', $filename);
+
+        // Allow large file transfers without PHP timeout or memory limits
+        @set_time_limit(0);
+        @ini_set('output_buffering', 'Off');
+
+        while (ob_get_level()) {
+            ob_end_clean();
+        }
+
+        nocache_headers();
+        header('Content-Type: ' . $mime);
+        header('Content-Disposition: attachment; filename="' . $safe_filename . '"');
+        header('Content-Length: ' . filesize($local_path));
+        header('X-Content-Type-Options: nosniff');
+
+        // Stream in 1 MB chunks — avoids exhausting PHP memory on large files
+        $handle = fopen($local_path, 'rb');
+        if ($handle) {
+            while (!feof($handle)) {
+                echo fread($handle, 1048576);
+                flush();
+            }
+            fclose($handle);
+        }
+        exit;
+    }
+
+    private function find_file_by_id($items, $file_id)
+    {
+        if (!is_array($items)) {
+            return null;
+        }
+        foreach ($items as $item) {
+            if (!is_array($item)) {
+                continue;
+            }
+            if (isset($item['id']) && $item['id'] === $file_id) {
+                return $item;
+            }
+            if (isset($item['type']) && $item['type'] === 'folder') {
+                $found = $this->find_file_by_id($item['children'] ?? [], $file_id);
+                if ($found) {
+                    return $found;
+                }
+            }
+        }
+        return null;
     }
 
     public function clear_deal_access_transient($post_id)
@@ -48,7 +251,9 @@ class DealHandler
 
         wp_localize_script('rpa-deal-room', 'rpaDealRoom', [
             'ajax_url' => admin_url('admin-ajax.php'),
-            'nonce' => wp_create_nonce('rpa_deal_form_nonce')
+            'nonce'    => wp_create_nonce('rpa_deal_form_nonce'),
+            'dl_nonce' => wp_create_nonce('rpa_dl_' . get_the_ID()),
+            'site_url' => home_url('/'),
         ]);
     }
 
@@ -402,33 +607,29 @@ class DealHandler
 </body>
 </html>';
 
+        $clean_site_name     = str_replace(['"', "'", '<', '>'], '', $site_name);
+        $from_name_filter    = function() use ($clean_site_name) { return $clean_site_name; };
+        $content_type_filter = function() { return 'text/html'; };
+
         $headers = [
+            'Content-Type: text/html; charset=UTF-8',
             'Reply-To: ' . $admin_email,
         ];
 
-        // Clean site name for headers to avoid breaking the From field
-        $clean_site_name = str_replace(['"', "'", '<', '>'], '', $site_name);
-
-        // Use filters for From address and name with high priority
-        $from_name_filter = function() use ($clean_site_name) { return $clean_site_name; };
-        $from_email_filter = function() use ($admin_email) { return $admin_email; };
-
         add_filter('wp_mail_from_name', $from_name_filter, 999);
-        add_filter('wp_mail_from', $from_email_filter, 999);
-        add_filter('wp_mail_content_type', function() { return 'text/html'; }, 999);
+        add_filter('wp_mail_content_type', $content_type_filter, 999);
 
         $attachments = ($pdf_path && file_exists($pdf_path)) ? [$pdf_path] : [];
 
         wp_mail($email, $subject, $message, $headers, $attachments);
 
         remove_filter('wp_mail_from_name', $from_name_filter, 999);
-        remove_filter('wp_mail_from', $from_email_filter, 999);
-        remove_filter('wp_mail_content_type', function() { return 'text/html'; }, 999);
+        remove_filter('wp_mail_content_type', $content_type_filter, 999);
     }
 
     private function send_admin_notification($project_id, $first_name, $last_name, $company_name, $user_email, $phone, $signed_date, $pdf_path)
     {
-        $notify_email = ['Kim.Brothers@cushwake.com', 'Devin.Beasley@cushwake.com'];
+        $notify_email = ['Devin.Beasley@cushwake.com', 'Kim.Brothers@cushwake.com'];
         $property_name = get_the_title($project_id);
         $site_name     = wp_specialchars_decode(get_option('blogname'), ENT_QUOTES);
         $admin_email   = get_option('admin_email');
@@ -579,25 +780,28 @@ class DealHandler
 </body>
 </html>';
 
+        $clean_site_name     = str_replace(['"', "'", '<', '>'], '', $site_name);
+        $from_name_filter    = function() use ($clean_site_name) { return $clean_site_name; };
+        $content_type_filter = function() { return 'text/html'; };
+
         $headers = [
+            'Content-Type: text/html; charset=UTF-8',
             'Reply-To: ' . $admin_email,
         ];
 
-        $clean_site_name = str_replace(['"', "'", '<', '>'], '', $site_name);
-        $from_name_filter = function() use ($clean_site_name) { return $clean_site_name; };
-        $from_email_filter = function() use ($admin_email) { return $admin_email; };
-
         add_filter('wp_mail_from_name', $from_name_filter, 999);
-        add_filter('wp_mail_from', $from_email_filter, 999);
-        add_filter('wp_mail_content_type', function() { return 'text/html'; }, 999);
+        add_filter('wp_mail_content_type', $content_type_filter, 999);
 
         $attachments = ($pdf_path && file_exists($pdf_path)) ? [$pdf_path] : [];
 
-        wp_mail($notify_email, $subject, $message, $headers, $attachments);
+        $sent = wp_mail($notify_email, $subject, $message, $headers, $attachments);
 
         remove_filter('wp_mail_from_name', $from_name_filter, 999);
-        remove_filter('wp_mail_from', $from_email_filter, 999);
-        remove_filter('wp_mail_content_type', function() { return 'text/html'; }, 999);
+        remove_filter('wp_mail_content_type', $content_type_filter, 999);
+
+        if (!$sent) {
+            error_log('RPA Listings: Admin notification email failed to send to ' . implode(',', $notify_email) . ' for project ' . $project_id);
+        }
     }
 
     public function handle_magic_link()
