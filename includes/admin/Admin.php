@@ -6,6 +6,8 @@ final class Admin
 {
 	public function register(): void
 	{
+		add_filter('register_post_type_args', [$this, 'rename_project_labels'], 10, 2);
+		add_filter('register_taxonomy_args', [$this, 'rename_project_taxonomy_labels'], 10, 2);
 		add_action('init', [$this, 'boot'], 20);
 		add_action('init', [$this, 'register_cpts']);
 		add_action('pre_get_posts', [$this, 'filter_projects_by_listing_status']);
@@ -17,6 +19,8 @@ final class Admin
 
 		add_filter('manage_project_posts_columns', [$this, 'set_project_columns']);
 		add_action('manage_project_posts_custom_column', [$this, 'render_project_column'], 10, 2);
+
+		add_filter('get_post_metadata', [$this, 'inject_city_state_into_location'], 10, 4);
 	}
 
 	public function add_deal_entry_meta_boxes(): void
@@ -150,6 +154,97 @@ final class Admin
 		echo '<span style="display:inline-block; padding:2px 10px; border-radius:12px; font-size:12px; font-weight:600; color:' . esc_attr($badge['color']) . '; background:' . esc_attr($badge['bg']) . ';">'
 			. esc_html($badge['label'])
 			. '</span>';
+	}
+
+	public function rename_project_labels(array $args, string $post_type): array
+	{
+		if ($post_type !== 'project') {
+			return $args;
+		}
+
+		$args['label'] = __('Listing', 'rpa-listings');
+		$args['labels']['name']           = __('Listings', 'rpa-listings');
+		$args['labels']['singular_name']  = __('Listing', 'rpa-listings');
+		$args['labels']['menu_name']      = __('Listings', 'rpa-listings');
+		$args['labels']['name_admin_bar'] = __('Listing', 'rpa-listings');
+		$args['labels']['add_new_item']   = __('Add New Listing', 'rpa-listings');
+
+		return $args;
+	}
+
+	public function rename_project_taxonomy_labels(array $args, string $taxonomy): array
+	{
+		$map = [
+			'project-cat' => [
+				'name'          => __('Listing Categories', 'rpa-listings'),
+				'singular_name' => __('Listing Category', 'rpa-listings'),
+				'menu_name'     => __('Listing Categories', 'rpa-listings'),
+				'add_new_item'  => __('Add New Listing Category', 'rpa-listings'),
+				'all_items'     => __('All Listing Categories', 'rpa-listings'),
+				'edit_item'     => __('Edit Listing Category', 'rpa-listings'),
+				'update_item'   => __('Update Listing Category', 'rpa-listings'),
+				'search_items'  => __('Search Listing Categories', 'rpa-listings'),
+			],
+			'project-status' => [
+				'name'          => __('Listing Status', 'rpa-listings'),
+				'singular_name' => __('Listing Status', 'rpa-listings'),
+				'menu_name'     => __('Listing Status', 'rpa-listings'),
+				'add_new_item'  => __('Add New Listing Status', 'rpa-listings'),
+				'all_items'     => __('All Listing Status', 'rpa-listings'),
+				'edit_item'     => __('Edit Listing Status', 'rpa-listings'),
+				'update_item'   => __('Update Listing Status', 'rpa-listings'),
+			],
+			'project-type' => [
+				'name'          => __('Listing Types', 'rpa-listings'),
+				'singular_name' => __('Listing Type', 'rpa-listings'),
+				'menu_name'     => __('Listing Types', 'rpa-listings'),
+				'add_new_item'  => __('Add New Listing Type', 'rpa-listings'),
+				'all_items'     => __('All Listing Types', 'rpa-listings'),
+				'edit_item'     => __('Edit Listing Type', 'rpa-listings'),
+				'update_item'   => __('Update Listing Type', 'rpa-listings'),
+			],
+			'project-location' => [
+				'name'          => __('Listing Locations', 'rpa-listings'),
+				'singular_name' => __('Listing Location', 'rpa-listings'),
+				'menu_name'     => __('Listing Locations', 'rpa-listings'),
+				'add_new_item'  => __('Add New Listing Location', 'rpa-listings'),
+				'all_items'     => __('All Listing Locations', 'rpa-listings'),
+				'edit_item'     => __('Edit Listing Location', 'rpa-listings'),
+				'update_item'   => __('Update Listing Location', 'rpa-listings'),
+			],
+		];
+
+		if (!isset($map[$taxonomy])) {
+			return $args;
+		}
+
+		foreach ($map[$taxonomy] as $key => $value) {
+			$args['labels'][$key] = $value;
+		}
+
+		return $args;
+	}
+
+	public function inject_city_state_into_location($value, int $object_id, string $meta_key, bool $single)
+	{
+		if ($meta_key !== 'project_location') {
+			return $value;
+		}
+
+		if (get_post_type($object_id) !== 'project') {
+			return $value;
+		}
+
+		$city  = get_post_meta($object_id, 'rpa_project_city', true);
+		$state = get_post_meta($object_id, 'rpa_project_state', true);
+
+		if (empty($city) && empty($state)) {
+			return $value;
+		}
+
+		$city_state = implode(', ', array_filter([$city, $state]));
+
+		return $single ? $city_state : [$city_state];
 	}
 
 	public function register_cpts(): void

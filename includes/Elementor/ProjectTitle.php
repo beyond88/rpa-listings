@@ -175,7 +175,19 @@ class ProjectTitle extends Widget_Base
 
         $settings = $this->get_settings_for_display();
 
-        $project_location = get_post_meta(get_the_ID(), 'rpa_project_location', true);
+        $post_id          = get_the_ID();
+        $project_location = get_post_meta($post_id, 'rpa_project_location', true);
+        $project_city     = get_post_meta($post_id, 'rpa_project_city', true);
+        $project_state    = get_post_meta($post_id, 'rpa_project_state', true);
+
+        $city_state = '';
+        if (!empty($project_city) && !empty($project_state)) {
+            $city_state = $project_city . ', ' . $project_state;
+        } elseif (!empty($project_city)) {
+            $city_state = $project_city;
+        } elseif (!empty($project_state)) {
+            $city_state = $project_state;
+        }
 
 ?>
 
@@ -184,6 +196,10 @@ class ProjectTitle extends Widget_Base
 
             <?php if (!empty($project_location)) : ?>
                 <span class="sub-title"><?php echo esc_html($project_location) ?></span>
+            <?php endif; ?>
+
+            <?php if (!empty($city_state)) : ?>
+                <span class="sub-title"><?php echo esc_html($city_state); ?></span>
             <?php endif; ?>
 
             <?php

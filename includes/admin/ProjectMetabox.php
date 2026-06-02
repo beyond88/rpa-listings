@@ -19,6 +19,8 @@ final class ProjectMetabox
 	private const META_SOLD_DATE     = 'rpa_project_sold_date';
 	private const META_DOCUMENTS     = 'rpa_project_documents';
 
+	private const META_CITY = 'rpa_project_city';
+	private const META_STATE = 'rpa_project_state';
 	private const META_TEASER_DESC = 'rpa_project_teaser_desc';
 	private const META_FULL_DESC = 'rpa_project_full_desc';
 	private const META_AMENITIES_TYPED = 'rpa_project_amenities_typed';
@@ -108,9 +110,6 @@ final class ProjectMetabox
 		if (count($addresses) === 0) { $addresses[] = ''; }
 
 		$teaser_desc = get_post_meta($post->ID, self::META_TEASER_DESC, true);
-		if (empty($teaser_desc)) {
-			$teaser_desc = get_post_meta($post->ID, 'project_short_description', true);
-		}
 		$full_desc = get_post_meta($post->ID, self::META_FULL_DESC, true);
 		
 		$property_types = get_post_meta($post->ID, self::META_PROPERTY_TYPES, true);
@@ -131,6 +130,8 @@ final class ProjectMetabox
 		$amenities_typed = (string) get_post_meta($post->ID, self::META_AMENITIES_TYPED, true);
 
 		$rpa_project_location = (string) get_post_meta($post->ID, 'rpa_project_location', true);
+		$rpa_project_city     = (string) get_post_meta($post->ID, self::META_CITY, true);
+		$rpa_project_state    = (string) get_post_meta($post->ID, self::META_STATE, true);
 
 		$gallery_ids = get_post_meta($post->ID, self::META_GALLERY, true);
 		if (!is_array($gallery_ids)) { $gallery_ids = []; }
@@ -198,6 +199,18 @@ final class ProjectMetabox
 		echo '<div class="rpa-row">';
 		echo '<span class="rpa-label">' . esc_html__('Full Address', 'rpa-listings') . '</span>';
 		echo '<input type="text" name="rpa_project_location" value="' . esc_attr($rpa_project_location) . '" class="large-text" />';
+		echo '</div>';
+
+		// City & State
+		echo '<div class="rpa-grid-2" style="margin-top: 10px;">';
+		echo '<div class="rpa-row">';
+		echo '<label class="rpa-label" for="rpa_project_city">' . esc_html__('City', 'rpa-listings') . '</label>';
+		echo '<input type="text" id="rpa_project_city" name="rpa_project_city" value="' . esc_attr($rpa_project_city) . '" class="large-text" />';
+		echo '</div>';
+		echo '<div class="rpa-row">';
+		echo '<label class="rpa-label" for="rpa_project_state">' . esc_html__('State', 'rpa-listings') . '</label>';
+		echo '<input type="text" id="rpa_project_state" name="rpa_project_state" value="' . esc_attr($rpa_project_state) . '" class="large-text" />';
+		echo '</div>';
 		echo '</div>';
 
 		// Additional Addresses (Repeater)
@@ -451,7 +464,7 @@ final class ProjectMetabox
 			"Type: " + d.property_type + "\n" +
 			"NRSF: " + (d.nrsf || "") + "\n" +
 			"Units: " + (d.units || "") + "\n" +
-			"Date Sold: " + (d.date || "");
+			"Sold: " + (d.date || "");
 	};
 
 	document.getElementById("rpa-autopopulate-sold-summary").addEventListener("click", function(){
@@ -557,6 +570,14 @@ final class ProjectMetabox
 
 		if (isset($_POST['rpa_project_location'])) {
 			update_post_meta($post_id, 'rpa_project_location', sanitize_text_field($_POST['rpa_project_location']));
+		}
+
+		if (isset($_POST['rpa_project_city'])) {
+			update_post_meta($post_id, self::META_CITY, sanitize_text_field($_POST['rpa_project_city']));
+		}
+
+		if (isset($_POST['rpa_project_state'])) {
+			update_post_meta($post_id, self::META_STATE, sanitize_text_field($_POST['rpa_project_state']));
 		}
 
 		if (isset($_POST['rpa_project_addresses']) && is_array($_POST['rpa_project_addresses'])) {

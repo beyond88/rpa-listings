@@ -394,6 +394,19 @@ class ProjectGallery extends Widget_Base
             }
         }
 
+        // On project pages, never fall back to widget defaults for video/360.
+        // The reland-core widget bakes in placeholder defaults (2 video items + a Google Maps iframe)
+        // when a widget instance is first created. Clearing here prevents those defaults from
+        // causing empty tabs to appear when no metabox data has been entered.
+        if ($post_id && get_post_type($post_id) === 'project') {
+            if (!$has_meta_videos) {
+                $video_slides = [];
+            }
+            if (!$has_meta_360) {
+                $video360_slides = [];
+            }
+        }
+
         // Visibility Logic: Show tab only if it has content AND is enabled in settings (or has metabox data)
         $show_image_tab = !empty($gallery_slides) && (!empty($settings['tg_image_tab_show']) || $has_meta_photos);
         $show_video_tab = !empty($video_slides) && (!empty($settings['tg_video_tab_show']) || $has_meta_videos);

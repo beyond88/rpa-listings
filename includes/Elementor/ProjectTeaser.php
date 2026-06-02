@@ -139,13 +139,7 @@ class ProjectTeaser extends Widget_Base
             return;
         }
 
-        // Try getting our custom meta key first
         $teaser_desc = get_post_meta($post_id, 'rpa_project_teaser_desc', true);
-
-        // Fallback to the old one if empty
-        if (empty($teaser_desc)) {
-            $teaser_desc = get_post_meta($post_id, 'project_short_description', true);
-        }
 
         if (empty($teaser_desc)) {
             return;

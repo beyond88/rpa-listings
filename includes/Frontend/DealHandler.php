@@ -326,7 +326,7 @@ class DealHandler
         $magic_token = wp_generate_password(32, false);
 
         // Create deal entry post
-        $post_title = $first_name . ' ' . $last_name . ' - ' . get_the_title($project_id);
+        $post_title = $first_name . ' ' . $last_name . ' - ' . wp_specialchars_decode(get_the_title($project_id), ENT_QUOTES);
         $entry_id = wp_insert_post([
             'post_title' => $post_title,
             'post_type' => 'deal_entry',
@@ -371,7 +371,7 @@ class DealHandler
 
     private function generate_pdf($entry_id, $project_id, $first_name, $last_name, $company_name, $signature_data, $signed_date = null, $signature_type = 'draw')
     {
-        $property_name = get_the_title($project_id);
+        $property_name = wp_specialchars_decode(get_the_title($project_id), ENT_QUOTES);
         $addresses = get_post_meta($project_id, 'rpa_project_addresses', true);
         $address = (is_array($addresses) && !empty($addresses[0])) ? $addresses[0] : '';
         $full_name = trim($first_name . ' ' . $last_name);
@@ -481,7 +481,7 @@ class DealHandler
     {
         $project_url  = get_permalink($project_id);
         $magic_link   = add_query_arg(['deal_token' => $magic_token], $project_url);
-        $property_name = get_the_title($project_id);
+        $property_name = wp_specialchars_decode(get_the_title($project_id), ENT_QUOTES);
         $site_name    = wp_specialchars_decode(get_option('blogname'), ENT_QUOTES);
         $admin_email  = get_option('admin_email');
         $current_year = gmdate('Y');
@@ -630,7 +630,7 @@ class DealHandler
     private function send_admin_notification($project_id, $first_name, $last_name, $company_name, $user_email, $phone, $signed_date, $pdf_path)
     {
         $notify_email = ['Devin.Beasley@cushwake.com', 'Kim.Brothers@cushwake.com'];
-        $property_name = get_the_title($project_id);
+        $property_name = wp_specialchars_decode(get_the_title($project_id), ENT_QUOTES);
         $site_name     = wp_specialchars_decode(get_option('blogname'), ENT_QUOTES);
         $admin_email   = get_option('admin_email');
         $current_year  = gmdate('Y');

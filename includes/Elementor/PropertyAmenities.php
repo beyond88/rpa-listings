@@ -106,10 +106,24 @@ class PropertyAmenities extends Widget_Base
                         </ul>
                     <?php endif; ?>
 
-                    <?php if (!empty($amenities_typed)) : ?>
-                        <div class="amenities-typed-content">
-                            <?php echo wp_kses_post(wpautop($amenities_typed)); ?>
-                        </div>
+                    <?php
+                    if (!empty($amenities_typed)) :
+                        // Normalize block-level tags and line breaks to newlines, then strip HTML
+                        $normalized = str_ireplace(
+                            ['<br>', '<br/>', '<br />', '</p>', '</li>'],
+                            "\n",
+                            $amenities_typed
+                        );
+                        $plain = wp_strip_all_tags($normalized);
+                        $lines = array_filter(array_map('trim', explode("\n", $plain)));
+                    ?>
+                        <ul class="amenities-list" style="list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px 20px; width: 100%;">
+                            <?php foreach ($lines as $line) : ?>
+                                <li style="display: flex; align-items: flex-start; gap: 8px; font-size: 14px; color: #111; font-weight: 500; line-height: 1.4;">
+                                    <i class="flaticon-006-shield" style="color: #cda252; font-size: 13px; margin-top: 3px; font-weight: normal;"></i> <span style="flex: 1;"><?php echo esc_html($line); ?></span>
+                                </li>
+                            <?php endforeach; ?>
+                        </ul>
                     <?php endif; ?>
                 </div>
             <?php endif; ?>
