@@ -12,6 +12,7 @@ class ElementorInit
     public function register_widgets($widgets_manager): void
     {
         require_once __DIR__ . '/SoldProjectGrid.php';
+        require_once __DIR__ . '/RPAProjectGrid.php';
         require_once __DIR__ . '/DealRoomAccess.php';
         require_once __DIR__ . '/DealRoomManager.php';
         require_once __DIR__ . '/DealRoomModal.php';
@@ -33,7 +34,8 @@ class ElementorInit
         $widgets_manager->unregister('features');
         $widgets_manager->unregister('tg-gallery');
         $widgets_manager->unregister('tg-direction');
-        
+        $widgets_manager->unregister('project-grid');
+
         $widgets_manager->register(new ProjectTitle());
         $widgets_manager->register(new ProjectMeta());
         $widgets_manager->register(new ProjectTeaser());
@@ -41,6 +43,7 @@ class ElementorInit
         $widgets_manager->register(new ProjectFeaturedImage());
         $widgets_manager->register(new RPAFeatures());
         $widgets_manager->register(new SoldProjectGrid());
+        $widgets_manager->register(new RPAProjectGrid());
         $widgets_manager->register(new DealRoomAccess());
         $widgets_manager->register(new DealRoomManager());
         $widgets_manager->register(new PropertyAmenities());

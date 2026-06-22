@@ -258,6 +258,8 @@ class ProjectMeta extends Widget_Base
         $total_nrsf = get_post_meta($post_id, 'total_nrsf', true);
         $lot_size = get_post_meta($post_id, 'lot_size', true);
         $market_bid = get_post_meta($post_id, 'market_bid', true);
+        $total_slips = get_post_meta($post_id, 'total_slips', true);
+        $rv_lots_dwellings = get_post_meta($post_id, 'rv_lots_dwellings', true);
 
         // Process property types
         $property_type_str = '';
@@ -345,6 +347,28 @@ class ProjectMeta extends Widget_Base
                         </li>
                     <?php endif; ?>
 
+                    <?php if (!empty($total_slips)) : ?>
+                        <li class="info-item">
+                            <div class="icon">
+                                <i class="fas fa-anchor"></i>
+                            </div>
+                            <div class="content">
+                                <p><?php echo esc_html__('Total Slips', 'tpcore') ?> <span><?php echo esc_html($total_slips) ?></span></p>
+                            </div>
+                        </li>
+                    <?php endif; ?>
+
+                    <?php if (!empty($rv_lots_dwellings)) : ?>
+                        <li class="info-item">
+                            <div class="icon">
+                                <i class="fas fa-caravan"></i>
+                            </div>
+                            <div class="content">
+                                <p><?php echo esc_html__('RV Lots/Dwellings', 'tpcore') ?> <span><?php echo esc_html($rv_lots_dwellings) ?></span></p>
+                            </div>
+                        </li>
+                    <?php endif; ?>
+
                     <?php if (!empty($project_status)) : ?>
                         <li class="info-item">
                             <div class="icon">
@@ -362,7 +386,9 @@ class ProjectMeta extends Widget_Base
                                 <i class="flaticon-008-money-bag"></i>
                             </div>
                             <div class="content">
-                                <p><?php echo esc_html__('Market Bid', 'tpcore') ?> <span><?php echo esc_html($market_bid) ?></span></p>
+                                <p>
+                                    <span><?php echo nl2br(esc_html($market_bid)) ?></span>
+                                </p>
                             </div>
                         </li>
                     <?php endif; ?>

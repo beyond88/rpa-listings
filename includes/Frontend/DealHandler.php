@@ -326,7 +326,7 @@ class DealHandler
         $magic_token = wp_generate_password(32, false);
 
         // Create deal entry post
-        $post_title = $first_name . ' ' . $last_name . ' - ' . wp_specialchars_decode(get_the_title($project_id), ENT_QUOTES);
+        $post_title = $first_name . ' ' . $last_name . ' - ' . html_entity_decode(get_the_title($project_id), ENT_QUOTES, 'UTF-8');
         $entry_id = wp_insert_post([
             'post_title' => $post_title,
             'post_type' => 'deal_entry',
@@ -371,7 +371,7 @@ class DealHandler
 
     private function generate_pdf($entry_id, $project_id, $first_name, $last_name, $company_name, $signature_data, $signed_date = null, $signature_type = 'draw')
     {
-        $property_name = wp_specialchars_decode(get_the_title($project_id), ENT_QUOTES);
+        $property_name = html_entity_decode(get_the_title($project_id), ENT_QUOTES, 'UTF-8');
         $addresses = get_post_meta($project_id, 'rpa_project_addresses', true);
         $address = (is_array($addresses) && !empty($addresses[0])) ? $addresses[0] : '';
         $full_name = trim($first_name . ' ' . $last_name);
@@ -481,8 +481,8 @@ class DealHandler
     {
         $project_url  = get_permalink($project_id);
         $magic_link   = add_query_arg(['deal_token' => $magic_token], $project_url);
-        $property_name = wp_specialchars_decode(get_the_title($project_id), ENT_QUOTES);
-        $site_name    = wp_specialchars_decode(get_option('blogname'), ENT_QUOTES);
+        $property_name = html_entity_decode(get_the_title($project_id), ENT_QUOTES, 'UTF-8');
+        $site_name    = html_entity_decode(get_option('blogname'), ENT_QUOTES, 'UTF-8');
         $admin_email  = get_option('admin_email');
         $current_year = gmdate('Y');
         $signed_date  = current_time('F j, Y');
@@ -613,7 +613,7 @@ class DealHandler
 
         $headers = [
             'Content-Type: text/html; charset=UTF-8',
-            'Reply-To: ' . $admin_email,
+            'Reply-To: kim.brothers@cushwake.com, devin.beasley@cushwake.com',
         ];
 
         add_filter('wp_mail_from_name', $from_name_filter, 999);
@@ -630,8 +630,8 @@ class DealHandler
     private function send_admin_notification($project_id, $first_name, $last_name, $company_name, $user_email, $phone, $signed_date, $pdf_path)
     {
         $notify_email = ['Devin.Beasley@cushwake.com', 'Kim.Brothers@cushwake.com'];
-        $property_name = wp_specialchars_decode(get_the_title($project_id), ENT_QUOTES);
-        $site_name     = wp_specialchars_decode(get_option('blogname'), ENT_QUOTES);
+        $property_name = html_entity_decode(get_the_title($project_id), ENT_QUOTES, 'UTF-8');
+        $site_name     = html_entity_decode(get_option('blogname'), ENT_QUOTES, 'UTF-8');
         $admin_email   = get_option('admin_email');
         $current_year  = gmdate('Y');
         $full_name     = trim($first_name . ' ' . $last_name);
@@ -786,7 +786,7 @@ class DealHandler
 
         $headers = [
             'Content-Type: text/html; charset=UTF-8',
-            'Reply-To: ' . $admin_email,
+            'Reply-To: kim.brothers@cushwake.com, devin.beasley@cushwake.com',
         ];
 
         add_filter('wp_mail_from_name', $from_name_filter, 999);

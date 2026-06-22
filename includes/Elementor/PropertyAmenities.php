@@ -80,6 +80,7 @@ class PropertyAmenities extends Widget_Base
         $settings = $this->get_settings_for_display();
         $post_id = get_the_ID();
         $amenities = get_post_meta($post_id, 'rpa_project_amenities', true);
+        $marina_amenities = get_post_meta($post_id, 'rpa_project_marina_amenities', true);
         $amenities_typed = get_post_meta($post_id, 'rpa_project_amenities_typed', true);
         
         $heading_tag = $settings['tg_heading_tag'] ?: 'h2';
@@ -88,7 +89,7 @@ class PropertyAmenities extends Widget_Base
 ?>
         <div class="project-info-wrap rpa-project-meta-extra">
 
-            <?php if ((!empty($amenities) && is_array($amenities)) || !empty($amenities_typed)) : ?>
+            <?php if ((!empty($amenities) && is_array($amenities)) || (!empty($marina_amenities) && is_array($marina_amenities)) || !empty($amenities_typed)) : ?>
                 <div class="rpa-amenities-wrap" style="display: flex; flex-direction: column; gap: 20px;">
                     <div class="content">
                         <<?php echo esc_attr($heading_tag); ?>>
@@ -121,6 +122,21 @@ class PropertyAmenities extends Widget_Base
                             <?php foreach ($lines as $line) : ?>
                                 <li style="display: flex; align-items: flex-start; gap: 8px; font-size: 14px; color: #111; font-weight: 500; line-height: 1.4;">
                                     <i class="flaticon-006-shield" style="color: #cda252; font-size: 13px; margin-top: 3px; font-weight: normal;"></i> <span style="flex: 1;"><?php echo esc_html($line); ?></span>
+                                </li>
+                            <?php endforeach; ?>
+                        </ul>
+                    <?php endif; ?>
+
+                    <?php if (!empty($marina_amenities) && is_array($marina_amenities)) : ?>
+                        <div class="content">
+                            <<?php echo esc_attr($heading_tag); ?>>
+                                <?php echo esc_html__('Marina Amenities', 'rpa-listings'); ?>
+                            </<?php echo esc_attr($heading_tag); ?>>
+                        </div>
+                        <ul class="amenities-list" style="list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px 20px; width: 100%;">
+                            <?php foreach ($marina_amenities as $amenity) : ?>
+                                <li style="display: flex; align-items: flex-start; gap: 8px; font-size: 14px; color: #111; font-weight: 500; line-height: 1.4;">
+                                    <i class="flaticon-006-shield" style="color: #cda252; font-size: 13px; margin-top: 3px; font-weight: normal;"></i> <span style="flex: 1;"><?php echo esc_html($amenity); ?></span>
                                 </li>
                             <?php endforeach; ?>
                         </ul>

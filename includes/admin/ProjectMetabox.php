@@ -13,6 +13,7 @@ final class ProjectMetabox
 	private const META_LISTING_STATUS = 'rpa_project_listing_status';
 	private const META_ADDRESSES = 'rpa_project_addresses';
 	private const META_AMENITIES = 'rpa_project_amenities';
+	private const META_MARINA_AMENITIES = 'rpa_project_marina_amenities';
 	private const META_SOLD_SUMMARY  = 'rpa_project_sold_summary';
 	private const META_SOLD_NRSF     = 'rpa_project_sold_nrsf';
 	private const META_SOLD_UNITS    = 'rpa_project_sold_units';
@@ -121,12 +122,16 @@ final class ProjectMetabox
 		$nrsf = get_post_meta($post->ID, 'total_nrsf', true);
 		$lot_size = get_post_meta($post->ID, 'lot_size', true);
 		$market_bid = get_post_meta($post->ID, 'market_bid', true);
+		$total_slips = get_post_meta($post->ID, 'total_slips', true);
+		$rv_lots_dwellings = get_post_meta($post->ID, 'rv_lots_dwellings', true);
 
 		$status = (string) get_post_meta($post->ID, self::META_STATUS, true);
 		$listing_status = (string) get_post_meta($post->ID, self::META_LISTING_STATUS, true) ?: 'active';
 
 		$amenities = get_post_meta($post->ID, self::META_AMENITIES, true);
 		if (!is_array($amenities)) { $amenities = []; }
+		$marina_amenities = get_post_meta($post->ID, self::META_MARINA_AMENITIES, true);
+		if (!is_array($marina_amenities)) { $marina_amenities = []; }
 		$amenities_typed = (string) get_post_meta($post->ID, self::META_AMENITIES_TYPED, true);
 
 		$rpa_project_location = (string) get_post_meta($post->ID, 'rpa_project_location', true);
@@ -174,6 +179,18 @@ final class ProjectMetabox
 			'Lease Up' => esc_html__('Lease Up', 'rpa-listings'),
 			'Stabilized' => esc_html__('Stabilized', 'rpa-listings'),
 			'CofO' => esc_html__('CofO', 'rpa-listings'),
+			'Early-Stage Lease Up' => esc_html__('Early-Stage Lease Up', 'rpa-listings'),
+			'Late-Stage Lease Up' => esc_html__('Late-Stage Lease Up', 'rpa-listings'),
+			'Entitled Land' => esc_html__('Entitled Land', 'rpa-listings'),
+			'Value-Add' => esc_html__('Value-Add', 'rpa-listings'),
+			'Expansion in Progress' => esc_html__('Expansion in Progress', 'rpa-listings'),
+			'Mature / Seasoned' => esc_html__('Mature / Seasoned', 'rpa-listings'),
+			'Pre-Stabilized' => esc_html__('Pre-Stabilized', 'rpa-listings'),
+			'Raw / Unentitled Land' => esc_html__('Raw / Unentitled Land', 'rpa-listings'),
+			'Site Plan / Zoning Pending' => esc_html__('Site Plan / Zoning Pending', 'rpa-listings'),
+			'Pre-Development' => esc_html__('Pre-Development', 'rpa-listings'),
+			'Core / Core-Plus' => esc_html__('Core / Core-Plus', 'rpa-listings'),
+			'Opportunistic' => esc_html__('Opportunistic', 'rpa-listings'),
 		];
 
 		$amenity_options = [
@@ -191,7 +208,18 @@ final class ProjectMetabox
 			'Trickle Chargers' => esc_html__('Trickle Chargers', 'rpa-listings'),
 			'Propane Refill Stations' => esc_html__('Propane Refill Stations', 'rpa-listings'),
 			'Solar Canopies' => esc_html__('Solar Canopies', 'rpa-listings'),
+			'On-Site Manager or Security Patrols' => esc_html__('On-Site Manager or Security Patrols', 'rpa-listings'),
+			'Motion-Activated Lighting' => esc_html__('Motion-Activated Lighting', 'rpa-listings'),
+			'Dog Wash' => esc_html__('Dog Wash', 'rpa-listings'),
+			'Dog Park' => esc_html__('Dog Park', 'rpa-listings'),
+			'Vacuum Stations' => esc_html__('Vacuum Stations', 'rpa-listings'),
+			'Wide Drive Aisles for Easy Maneuvering' => esc_html__('Wide Drive Aisles for Easy Maneuvering', 'rpa-listings'),
 		];
+
+		$marina_amenity_options = [];
+		foreach (array_keys($this->marina_amenity_options()) as $marina_value) {
+			$marina_amenity_options[$marina_value] = esc_html($marina_value);
+		}
 
 		echo '<div class="rpa-project-meta">';
 
@@ -294,7 +322,7 @@ final class ProjectMetabox
 		// 10. Market Bid (ACF)
 		echo '<div class="rpa-row">';
 		echo '<label class="rpa-label" for="market_bid">' . esc_html__('Market Bid', 'rpa-listings') . '</label>';
-		echo '<input type="text" class="regular-text" id="market_bid" name="market_bid" value="' . esc_attr($market_bid) . '" />';
+		echo '<textarea class="regular-text" id="market_bid" name="market_bid" rows="3">' . esc_textarea($market_bid) . '</textarea>';
 		echo '</div>';
 
 		// Listing Status (Floating?)
@@ -305,6 +333,18 @@ final class ProjectMetabox
 		echo '<option value="sold"' . selected($listing_status, 'sold', false) . '>Sold</option>';
 		echo '<option value="private"' . selected($listing_status, 'private', false) . '>Private (Off-Market)</option>';
 		echo '</select>';
+		echo '</div>';
+
+		// Total Slips (Marina) - free response, optional
+		echo '<div class="rpa-row">';
+		echo '<label class="rpa-label" for="total_slips">' . esc_html__('Total Slips', 'rpa-listings') . '</label>';
+		echo '<input type="text" class="regular-text" id="total_slips" name="total_slips" value="' . esc_attr($total_slips) . '" />';
+		echo '</div>';
+
+		// RV Lots/Dwellings (RV Park) - free response, optional
+		echo '<div class="rpa-row">';
+		echo '<label class="rpa-label" for="rv_lots_dwellings">' . esc_html__('RV Lots/Dwellings', 'rpa-listings') . '</label>';
+		echo '<input type="text" class="regular-text" id="rv_lots_dwellings" name="rv_lots_dwellings" value="' . esc_attr($rv_lots_dwellings) . '" />';
 		echo '</div>';
 
 		echo '</div>';
@@ -318,6 +358,17 @@ final class ProjectMetabox
 		foreach ($amenity_options as $value => $label) {
 			$checked = in_array($value, $amenities, true) ? ' checked' : '';
 			echo '<label class="rpa-checkbox"><input type="checkbox" name="rpa_project_amenities[]" value="' . esc_attr($value) . '"' . $checked . ' /> <span>' . $label . '</span></label>';
+		}
+		echo '</div>';
+		echo '</div>';
+
+		// 11b. Marina Amenities Selector
+		echo '<div class="rpa-row">';
+		echo '<span class="rpa-label">' . esc_html__('Marina Amenities', 'rpa-listings') . '</span>';
+		echo '<div class="rpa-checkboxes">';
+		foreach ($marina_amenity_options as $value => $label) {
+			$checked = in_array($value, $marina_amenities, true) ? ' checked' : '';
+			echo '<label class="rpa-checkbox"><input type="checkbox" name="rpa_project_marina_amenities[]" value="' . esc_attr($value) . '"' . $checked . ' /> <span>' . $label . '</span></label>';
 		}
 		echo '</div>';
 		echo '</div>';
@@ -593,7 +644,9 @@ final class ProjectMetabox
 		if (isset($_POST['number_of_units'])) { update_post_meta($post_id, 'number_of_units', sanitize_text_field($_POST['number_of_units'])); }
 		if (isset($_POST['total_nrsf'])) { update_post_meta($post_id, 'total_nrsf', sanitize_text_field($_POST['total_nrsf'])); }
 		if (isset($_POST['lot_size'])) { update_post_meta($post_id, 'lot_size', sanitize_text_field($_POST['lot_size'])); }
-		if (isset($_POST['market_bid'])) { update_post_meta($post_id, 'market_bid', sanitize_text_field($_POST['market_bid'])); }
+		if (isset($_POST['market_bid'])) { update_post_meta($post_id, 'market_bid', sanitize_textarea_field($_POST['market_bid'])); }
+		if (isset($_POST['total_slips'])) { update_post_meta($post_id, 'total_slips', sanitize_text_field($_POST['total_slips'])); }
+		if (isset($_POST['rv_lots_dwellings'])) { update_post_meta($post_id, 'rv_lots_dwellings', sanitize_text_field($_POST['rv_lots_dwellings'])); }
 
 		$allowed_property_types = array_keys($this->property_type_options());
 		$property_types = isset($_POST['rpa_project_property_types']) && is_array($_POST['rpa_project_property_types'])
@@ -617,6 +670,13 @@ final class ProjectMetabox
 			: [];
 		$amenities = array_values(array_intersect($amenities, $allowed_amenities));
 		update_post_meta($post_id, self::META_AMENITIES, $amenities);
+
+		$allowed_marina_amenities = array_keys($this->marina_amenity_options());
+		$marina_amenities = isset($_POST['rpa_project_marina_amenities']) && is_array($_POST['rpa_project_marina_amenities'])
+			? array_values(array_unique(array_filter(array_map('sanitize_text_field', $_POST['rpa_project_marina_amenities']))))
+			: [];
+		$marina_amenities = array_values(array_intersect($marina_amenities, $allowed_marina_amenities));
+		update_post_meta($post_id, self::META_MARINA_AMENITIES, $marina_amenities);
 
 		if (isset($_POST['rpa_project_amenities_typed'])) {
 			update_post_meta($post_id, self::META_AMENITIES_TYPED, wp_kses_post(wp_unslash($_POST['rpa_project_amenities_typed'])));
@@ -696,6 +756,18 @@ final class ProjectMetabox
 			'Lease Up' => true,
 			'Stabilized' => true,
 			'CofO' => true,
+			'Early-Stage Lease Up' => true,
+			'Late-Stage Lease Up' => true,
+			'Entitled Land' => true,
+			'Value-Add' => true,
+			'Expansion in Progress' => true,
+			'Mature / Seasoned' => true,
+			'Pre-Stabilized' => true,
+			'Raw / Unentitled Land' => true,
+			'Site Plan / Zoning Pending' => true,
+			'Pre-Development' => true,
+			'Core / Core-Plus' => true,
+			'Opportunistic' => true,
 		];
 	}
 
@@ -716,6 +788,35 @@ final class ProjectMetabox
 			'Trickle Chargers' => true,
 			'Propane Refill Stations' => true,
 			'Solar Canopies' => true,
+			'On-Site Manager or Security Patrols' => true,
+			'Motion-Activated Lighting' => true,
+			'Dog Wash' => true,
+			'Dog Park' => true,
+			'Vacuum Stations' => true,
+			'Wide Drive Aisles for Easy Maneuvering' => true,
+		];
+	}
+
+	private function marina_amenity_options(): array
+	{
+		return [
+			'Wet Slips' => true,
+			'Dry Storage' => true,
+			'Fuel Dock' => true,
+			'Pump-Out Station' => true,
+			'Freshwater Hookups' => true,
+			'Shore Power Pedestals' => true,
+			'Haul-Out Area with Travel Lift or Crane' => true,
+			'On-Site Boatyard for Repairs' => true,
+			'Restrooms and Showers' => true,
+			'Laundry' => true,
+			'Ice' => true,
+			'Gated Docks' => true,
+			'Security Cameras' => true,
+			'Restaurant or Bar' => true,
+			'Fish-Cleaning Station' => true,
+			'Charter and Rental Boats' => true,
+			'Pool' => true,
 		];
 	}
 }
